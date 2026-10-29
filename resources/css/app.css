@@ -1,0 +1,113 @@
+@import 'tailwindcss';
+@import '../../vendor/livewire/flux/dist/flux.css';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/flux-pro/stubs/**/*.blade.php';
+@source '../../vendor/livewire/flux/stubs/**/*.blade.php';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Manrope', 'Cairo', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-display: 'Fraunces', 'Cairo', Georgia, 'Times New Roman', serif;
+
+    /* Values are injected from config/theme.php. Do not put hex codes here. */
+    --color-nile-50: var(--theme-nile-50);
+    --color-nile-100: var(--theme-nile-100);
+    --color-nile-200: var(--theme-nile-200);
+    --color-nile-700: var(--theme-nile-700);
+    --color-nile-800: var(--theme-nile-800);
+    --color-nile-900: var(--theme-nile-900);
+    --color-nile-950: var(--theme-nile-950);
+
+    --color-gold-300: var(--theme-gold-300);
+    --color-gold-400: var(--theme-gold-400);
+    --color-gold-500: var(--theme-gold-500);
+    --color-gold-600: var(--theme-gold-600);
+
+    --color-sand-50: var(--theme-sand-50);
+    --color-sand-100: var(--theme-sand-100);
+    --color-sand-200: var(--theme-sand-200);
+
+    --color-ink: var(--theme-ink);
+    --color-deal: var(--theme-deal);
+    --color-star: var(--theme-star);
+
+    --color-zinc-50: #fafafa;
+    --color-zinc-100: #f5f5f5;
+    --color-zinc-200: #e5e5e5;
+    --color-zinc-300: #d4d4d4;
+    --color-zinc-400: #a3a3a3;
+    --color-zinc-500: #737373;
+    --color-zinc-600: #525252;
+    --color-zinc-700: #404040;
+    --color-zinc-800: #262626;
+    --color-zinc-900: #171717;
+    --color-zinc-950: #0a0a0a;
+
+    --color-accent: var(--color-neutral-800);
+    --color-accent-content: var(--color-neutral-800);
+    --color-accent-foreground: var(--color-white);
+}
+
+@layer theme {
+    .dark {
+        --color-accent: var(--color-white);
+        --color-accent-content: var(--color-white);
+        --color-accent-foreground: var(--color-neutral-800);
+    }
+}
+
+@layer base {
+
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+}
+
+[data-flux-field]:not(ui-radio, ui-checkbox) {
+    @apply grid gap-2;
+}
+
+[data-flux-label] {
+    @apply  !mb-0 !leading-tight;
+}
+
+input:focus[data-flux-control],
+textarea:focus[data-flux-control],
+select:focus[data-flux-control] {
+    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+}
+
+.store-scroll {
+    scrollbar-width: none;
+}
+
+.store-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.store-shell {
+    background-color: var(--color-sand-50);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+}
+
+[dir="rtl"] .store-shell,
+[dir="rtl"] .store-shell .font-display {
+    font-family: "Cairo", "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
+[dir="rtl"] .store-shell,
+[dir="rtl"] .store-shell * {
+    letter-spacing: 0;
+}
+
+/* \[:where(&)\]:size-4 {
+    @apply size-4;
+} */
