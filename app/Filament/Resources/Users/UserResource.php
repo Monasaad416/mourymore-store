@@ -82,6 +82,7 @@ class UserResource extends Resource
     {
         return __('filament/resources.users.plural_model_label');
     }
+
     public static function getNavigationLabel(): string
     {
         return __('filament/resources.users.plural_model_label');

@@ -6,6 +6,7 @@ use App\Models\Concerns\PublishesContent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -84,6 +85,6 @@ class Page extends Model
             return $meta;
         }
 
-        return \Illuminate\Support\Str::limit(strip_tags($this->displayBody()), 160);
+        return Str::limit(strip_tags($this->displayBody()), 160);
     }
 }

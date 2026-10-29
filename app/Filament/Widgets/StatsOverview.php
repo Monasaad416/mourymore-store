@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Support\Money;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Number;
 
 class StatsOverview extends StatsOverviewWidget
 {
@@ -96,7 +95,7 @@ class StatsOverview extends StatsOverviewWidget
 
     protected function money(float $amount): string
     {
-        return Number::currency($amount, in: Money::currencyCode(), locale: app()->getLocale());
+        return Money::format($amount);
     }
 
     protected function deltaDescription(float|int $current, float|int $previous, bool $absolute = false): string

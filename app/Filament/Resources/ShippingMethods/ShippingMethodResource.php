@@ -122,6 +122,7 @@ class ShippingMethodResource extends Resource
             'index' => ManageShippingMethods::route('/'),
         ];
     }
+
     public static function getModelLabel(): string
     {
         return __('filament/resources.shipping_methods.model_label');
@@ -131,6 +132,7 @@ class ShippingMethodResource extends Resource
     {
         return __('filament/resources.shipping_methods.plural_model_label');
     }
+
     public static function getNavigationLabel(): string
     {
         return __('filament/resources.shipping_methods.plural_model_label');

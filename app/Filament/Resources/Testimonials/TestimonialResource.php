@@ -133,6 +133,7 @@ class TestimonialResource extends Resource
     {
         return __('filament/resources.testimonials.plural_model_label');
     }
+
     public static function getNavigationLabel(): string
     {
         return __('filament/resources.testimonials.plural_model_label');

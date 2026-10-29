@@ -41,7 +41,15 @@ class CatalogForm
                 ])
                 ->default(ProductType::Physical->value)
                 ->required()
-                ->helperText($typeOptions === null ? null : __('filament/resources.products.fields.type_book_help'));
+                ->helperText(function () use ($typeOptions): ?string {
+                    if ($typeOptions === null) {
+                        return null;
+                    }
+
+                    $help = __('filament/resources.products.fields.type_book_help');
+
+                    return is_string($help) ? $help : null;
+                });
 
         $category = Select::make('category_id')
             ->label(__('filament/resources.products.fields.category'))
@@ -125,7 +133,15 @@ class CatalogForm
                             ->numeric()
                             ->default(0)
                             ->required()
-                            ->helperText($digitalOnly ? __('filament/resources.products.fields.stock_courses_help') : null),
+                            ->helperText(function () use ($digitalOnly): ?string {
+                                if (! $digitalOnly) {
+                                    return null;
+                                }
+
+                                $help = __('filament/resources.products.fields.stock_courses_help');
+
+                                return is_string($help) ? $help : null;
+                            }),
                         TextInput::make('rating')
                             ->label(__('filament/resources.products.fields.rating'))
                             ->numeric()

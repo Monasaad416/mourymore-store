@@ -35,13 +35,14 @@ class SyncSiteContent extends Command
         foreach ($keys as $key) {
             $en = $this->stringValue($flatEn[$key] ?? null);
             $ar = $this->stringValue($flatAr[$key] ?? null);
+            $sample = $en ?? $ar;
 
-            if ($en === null && $ar === null) {
+            if ($sample === null) {
                 continue;
             }
 
             $group = explode('.', $key, 2)[0];
-            $input = $this->guessInput($en ?? $ar ?? '');
+            $input = $this->guessInput($sample);
 
             $content = SiteContent::query()->firstOrNew(['key' => $key]);
             $isNew = ! $content->exists;
@@ -61,8 +62,8 @@ class SyncSiteContent extends Command
                 $content->setTranslation('value', 'ar', $ar);
             }
 
-            if ($currentEn === '' && $currentAr === '' && $en === null && $ar !== null) {
-                $content->setTranslation('value', 'en', $ar);
+            if ($currentEn === '' && $currentAr === '' && $en === null) {
+                $content->setTranslation('value', 'en', $sample);
             }
 
             $content->save();
@@ -144,7 +145,7 @@ class SyncSiteContent extends Command
             foreach (['en', 'ar'] as $locale) {
                 $current = trim((string) $content->getTranslation('value', $locale, false));
 
-                if ($current === '' && filled($values[$locale] ?? null)) {
+                if ($current === '' && filled($values[$locale])) {
                     $content->setTranslation('value', $locale, $values[$locale]);
                 }
             }

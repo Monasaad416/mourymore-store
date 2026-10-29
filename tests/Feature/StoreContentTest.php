@@ -2,7 +2,6 @@
 
 use App\Enums\ProductKind;
 use App\Filament\Resources\Articles\ArticleResource;
-use App\Filament\Resources\News\NewsResource;
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use App\Filament\Resources\Testimonials\TestimonialResource;
 use App\Livewire\Store\SubscribeForm;
@@ -99,7 +98,7 @@ test('an admin sees articles news testimonials and subscriptions in the sidebar'
     $this->actingAs($user);
 
     expect(ArticleResource::canViewAny())->toBeTrue()
-        ->and(NewsResource::canViewAny())->toBeTrue()
+        ->and($user->can('ViewAny:NewsItem'))->toBeTrue()
         ->and(TestimonialResource::canViewAny())->toBeTrue()
         ->and(SubscriptionResource::canViewAny())->toBeTrue();
 });

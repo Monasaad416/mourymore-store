@@ -205,12 +205,6 @@ class Product extends Model
      */
     public function displayHighlights(): array
     {
-        $highlights = $this->highlights;
-
-        if (! is_array($highlights)) {
-            return [];
-        }
-
-        return array_values(array_map(strval(...), $highlights));
+        return array_values(array_map(strval(...), $this->highlights));
     }
 }

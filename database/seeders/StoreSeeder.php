@@ -32,7 +32,7 @@ class StoreSeeder extends Seeder
             ['name' => 'Pantry', 'name_ar' => 'مؤن', 'slug' => 'pantry', 'blurb' => 'Dates, oil, gifts', 'blurb_ar' => 'بلح وزيت وهدايا', 'sort' => 7],
             ['name' => 'Sports', 'name_ar' => 'رياضة', 'slug' => 'sports', 'blurb' => 'Move, commute, train', 'blurb_ar' => 'حركة وتنقّل وتمرين', 'sort' => 8],
             ['name' => 'Books', 'name_ar' => 'كتب', 'slug' => 'books',  'blurb' => 'Stories and study', 'blurb_ar' => 'قصص ودراسة', 'sort' => 9],
-            ['name' => 'Courses', 'name_ar' => 'دورات', 'slug' => 'courses','blurb' => 'Learn at your pace', 'blurb_ar' => 'تعلّم وفق وتيرتك', 'sort' => 10],
+            ['name' => 'Courses', 'name_ar' => 'دورات', 'slug' => 'courses', 'blurb' => 'Learn at your pace', 'blurb_ar' => 'تعلّم وفق وتيرتك', 'sort' => 10],
         ];
 
         $ids = [];
@@ -783,7 +783,9 @@ class StoreSeeder extends Seeder
         $this->call(PageSeeder::class);
         $this->seedSiteSettings();
 
-        $this->command?->call('site-content:sync');
+        if ($this->command !== null) {
+            $this->command->call('site-content:sync');
+        }
     }
 
     private function seedSiteSettings(): void
@@ -879,7 +881,7 @@ class StoreSeeder extends Seeder
     {
         foreach ($fields as $field) {
             $english = $row[$field] ?? null;
-            $arabic = $row[$field . '_ar'] ?? null;
+            $arabic = $row[$field.'_ar'] ?? null;
             $translated = [];
 
             if ($english !== null && $english !== '') {
@@ -891,7 +893,7 @@ class StoreSeeder extends Seeder
             }
 
             $row[$field] = $translated;
-            unset($row[$field . '_ar']);
+            unset($row[$field.'_ar']);
         }
 
         return $row;

@@ -2,9 +2,6 @@
 
 namespace App\Support;
 
-use Illuminate\Filesystem\FilesystemAdapter;
-use Illuminate\Support\Facades\Storage;
-
 class Media
 {
     public static function url(?string $path): string
@@ -23,12 +20,6 @@ class Media
 
         if (str_starts_with($path, 'images/') || str_starts_with($path, 'storage/')) {
             return self::rootRelative($path);
-        }
-
-        $disk = Storage::disk('public');
-
-        if (! $disk instanceof FilesystemAdapter) {
-            return self::rootRelative('storage/'.ltrim($path, '/'));
         }
 
         // Prefer root-relative URLs so Filament/img tags work even when

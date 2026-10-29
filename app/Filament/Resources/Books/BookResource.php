@@ -87,7 +87,6 @@ class BookResource extends Resource
         ];
     }
 
-
     public static function getModelLabel(): string
     {
         return __('filament/resources.books.model_label');

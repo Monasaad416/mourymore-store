@@ -207,10 +207,15 @@ class Theme
     private static function rgb(string $hex): array
     {
         return [
-            hexdec(substr($hex, 1, 2)),
-            hexdec(substr($hex, 3, 2)),
-            hexdec(substr($hex, 5, 2)),
+            self::hexChannel(substr($hex, 1, 2)),
+            self::hexChannel(substr($hex, 3, 2)),
+            self::hexChannel(substr($hex, 5, 2)),
         ];
+    }
+
+    private static function hexChannel(string $pair): int
+    {
+        return (int) hexdec($pair);
     }
 
     private static function isLight(string $hex): bool

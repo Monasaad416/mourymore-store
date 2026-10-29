@@ -2,6 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Dashboard;
+use App\Filament\Pages\ManageSiteSettings;
 use App\Models\SiteSetting;
 use App\Support\Theme;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
@@ -9,8 +11,6 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use App\Filament\Pages\Dashboard;
-use App\Filament\Pages\ManageSiteSettings;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;

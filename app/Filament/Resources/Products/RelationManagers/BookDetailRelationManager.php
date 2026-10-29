@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\RelationManagers;
 
 use App\Enums\ProductType;
+use App\Models\Product;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -41,7 +42,11 @@ class BookDetailRelationManager extends RelationManager
                     ->directory('books')
                     ->acceptedFileTypes(['application/pdf'])
                     ->helperText(__('filament/resources.relations.book_detail.fields.file_path_help'))
-                    ->visible(fn (): bool => $this->getOwnerRecord()?->type === ProductType::Digital),
+                    ->visible(function (): bool {
+                        $owner = $this->getOwnerRecord();
+
+                        return $owner instanceof Product && $owner->type === ProductType::Digital;
+                    }),
             ]);
     }
 

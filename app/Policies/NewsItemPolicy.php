@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use App\Models\NewsItem;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Foundation\Auth\User as AuthUser;
 
 class NewsItemPolicy
 {
     use HandlesAuthorization;
-    
+
     public function viewAny(AuthUser $authUser): bool
     {
         return $authUser->can('ViewAny:NewsItem');
@@ -71,5 +71,4 @@ class NewsItemPolicy
     {
         return $authUser->can('Reorder:NewsItem');
     }
-
 }

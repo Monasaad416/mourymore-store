@@ -266,6 +266,9 @@ class CheckoutPage extends Component
         $this->redirect(route('orders.show', $order), navigate: true);
     }
 
+    /**
+     * @phpstan-impure
+     */
     private function resumeCheckoutOrder(): bool
     {
         $order = $this->orderForCheckoutToken();
@@ -279,6 +282,9 @@ class CheckoutPage extends Component
         return true;
     }
 
+    /**
+     * @phpstan-impure
+     */
     private function orderForCheckoutToken(): ?Order
     {
         $id = Cache::get($this->checkoutCacheKey());

@@ -97,6 +97,7 @@ class SubscriptionResource extends Resource
             'index' => ManageSubscriptions::route('/'),
         ];
     }
+
     public static function getModelLabel(): string
     {
         return __('filament/resources.subscriptions.model_label');

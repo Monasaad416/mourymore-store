@@ -32,7 +32,7 @@ class SiteContentFileLoader implements Loader
         $this->loader->addJsonPath($path);
     }
 
-    public function addPath($path): void
+    public function addPath(string $path): void
     {
         if (method_exists($this->loader, 'addPath')) {
             $this->loader->addPath($path);
@@ -40,7 +40,7 @@ class SiteContentFileLoader implements Loader
     }
 
     /**
-     * @return array<string, array<int, string>>
+     * @return array<string, string>
      */
     public function namespaces(): array
     {

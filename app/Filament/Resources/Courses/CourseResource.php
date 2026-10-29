@@ -83,7 +83,6 @@ class CourseResource extends Resource
         ];
     }
 
-
     public static function getModelLabel(): string
     {
         return __('filament/resources.courses.model_label');

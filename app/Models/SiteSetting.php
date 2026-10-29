@@ -122,8 +122,8 @@ class SiteSetting extends Model
 
     public static function defaults(): self
     {
-        $settings = new static;
-        $settings->forceFill(static::defaultAttributes());
+        $settings = new self;
+        $settings->forceFill(self::defaultAttributes());
 
         return $settings;
     }
