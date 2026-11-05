@@ -2,6 +2,8 @@
 
 namespace App\Filament\Catalog;
 
+use App\Enums\BookFormat;
+use App\Enums\ProductKind;
 use App\Models\Product;
 use App\Support\Money;
 use Filament\Infolists\Components\IconEntry;
@@ -55,7 +57,21 @@ class CatalogInfolist
                                     ->badge()
                                     ->color('primary'),
                                 TextEntry::make('type')
-                                    ->badge(),
+                                    ->badge()
+                                    ->visible(fn (Product $record): bool => $record->kind !== ProductKind::Book),
+                                TextEntry::make('book_formats')
+                                    ->label(__('filament/resources.products.fields.formats'))
+                                    ->badge()
+                                    ->separator(',')
+                                    ->state(function (Product $record): array {
+                                        $record->loadMissing('bookDetail');
+
+                                        return array_map(
+                                            static fn (BookFormat $format): string => __('filament/resources.products.fields.format_'.$format->value),
+                                            $record->availableBookFormats(),
+                                        );
+                                    })
+                                    ->visible(fn (Product $record): bool => $record->kind === ProductKind::Book),
                                 TextEntry::make('kind')
                                     ->badge()
                                     ->color('gray'),

@@ -6,28 +6,44 @@ use App\Models\PaymentMethod;
 
 class Payments
 {
+    public static function codEnabled(): bool
+    {
+        return (bool) config('store.cod_enabled', false); // cash on delivery
+    }
+
     /**
      * @return list<string>
      */
     public static function codes(): array
     {
-        $codes = PaymentMethod::query()
-            ->where('is_active', true)
-            ->orderBy('sort')
-            ->pluck('code')
-            ->all();
+        $query = PaymentMethod::query()->where('is_active', true);
+
+        if (! self::codEnabled()) {
+            $query->where('collects_on_delivery', false);
+        }
+
+        $codes = $query->orderBy('sort')->pluck('code')->all();
 
         if ($codes !== []) {
             return array_values(array_map(strval(...), $codes));
         }
 
         $raw = config('store.payments', []);
+        $keys = is_array($raw) ? array_values(array_filter(array_keys($raw), is_string(...))) : [];
 
-        return is_array($raw) ? array_values(array_filter(array_keys($raw), is_string(...))) : [];
+        if (! self::codEnabled()) {
+            $keys = array_values(array_filter($keys, fn (string $code): bool => $code !== 'cod'));
+        }
+
+        return $keys;
     }
 
     public static function collectsOnDelivery(string $code): bool
     {
+        if (! self::codEnabled()) {
+            return false;
+        }
+
         $method = PaymentMethod::query()->where('code', $code)->first();
 
         if ($method instanceof PaymentMethod) {
@@ -42,7 +58,13 @@ class Payments
      */
     public static function options(): array
     {
-        $methods = PaymentMethod::query()->where('is_active', true)->orderBy('sort')->get();
+        $query = PaymentMethod::query()->where('is_active', true);
+
+        if (! self::codEnabled()) {
+            $query->where('collects_on_delivery', false);
+        }
+
+        $methods = $query->orderBy('sort')->get();
 
         if ($methods->isNotEmpty()) {
             $options = [];
@@ -51,7 +73,9 @@ class Payments
                 $options[$method->code] = [
                     'label' => $method->displayName(),
                     'hint' => $method->displayHint(),
-                    'tag' => $method->collects_on_delivery ? __('store.payments.cod.tag') : __('store.payments.card.tag'),
+                    'tag' => $method->collects_on_delivery
+                        ? __('store.payments.cod.tag')
+                        : __('store.payments.card.tag'),
                 ];
             }
 
@@ -68,6 +92,10 @@ class Payments
 
         foreach (array_keys($raw) as $key) {
             if (! is_string($key)) {
+                continue;
+            }
+
+            if (! self::codEnabled() && $key === 'cod') {
                 continue;
             }
 

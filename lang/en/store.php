@@ -7,6 +7,18 @@ return [
         'description' => 'mourymore_store is a modern marketplace for Egypt. Shop phones, home, fashion, and pantry with InstaPay, Vodafone Cash, Fawry, and cards.',
     ],
 
+    'auth' => [
+        'panel_title' => 'Clearer shopping, with your purchases in one place.',
+        'panel_lead' => 'Sign in to track orders, download digital products, and get back to your purchases easily.',
+        'back_home' => 'Back to the store',
+        'submitting' => 'Sending…',
+        'flash' => [
+            'login' => 'Signed in successfully.',
+            'register' => 'Your account is ready. Welcome.',
+            'logout' => 'Signed out.',
+        ],
+    ],
+
     'nav' => [
         'deliver_to' => 'Deliver to',
         'promo' => 'Free delivery over :amount in Cairo & Giza · Code :code',
@@ -18,6 +30,7 @@ return [
         'hello' => 'Hello',
         'account' => 'Account',
         'your_account' => 'Your account',
+        'orders' => 'Your orders',
         'sign_in' => 'Sign in',
         'register' => 'Create account',
         'wishlist' => 'Wishlist',
@@ -135,6 +148,8 @@ return [
         'minutes' => 'min',
         'lesson_locked' => 'Opens after purchase',
         'out_soon' => 'Out of stock — next shipment soon',
+        'format_print' => 'Printed book',
+        'format_digital' => 'Digital PDF',
         'add' => 'Add to cart',
         'buy' => 'Buy now',
         'saved' => 'Saved to wishlist',
@@ -156,7 +171,7 @@ return [
     'card' => [
         'save' => 'Save to wishlist',
         'remove' => 'Remove from wishlist',
-        'express' => 'mourymore_store Express · Greater Cairo',
+        'in_stock' => 'In stock',
         'out' => 'Out of stock',
         'add' => 'Add to cart',
         'adding' => 'Adding…',
@@ -239,8 +254,62 @@ return [
         'place' => 'Place order',
         'placing' => 'Placing order…',
         'already_placing' => 'This order is already being placed. Wait a moment, then try again.',
+        'paymob_failed' => 'We could not start Paymob checkout. Please try again in a moment.',
+        'paymob_unconfigured' => 'Online payment is temporarily unavailable. Please try again later.',
+        'payment_unavailable' => 'No payment methods are available right now. Please try again later.',
+        'digital_note' => 'Digital items only — no delivery fee.',
+        'promo_invalid' => 'This promo code is invalid, expired, or has reached its usage limit.',
         'phone_invalid' => 'Use an Egyptian mobile number, like 01012345678.',
         'stock' => 'Not enough stock for :name.',
+    ],
+
+    'account' => [
+        'meta_title' => 'Your account',
+        'kicker' => 'Account',
+        'title' => 'Your account',
+        'lead' => 'Update your details and review your orders.',
+        'profile' => 'Profile',
+        'profile_lead' => 'Change the name and email used on your account.',
+        'name' => 'Full name',
+        'email' => 'Email',
+        'password' => 'Password',
+        'password_title' => 'Password',
+        'password_lead' => 'Change the password for your account.',
+        'current_password' => 'Current password',
+        'new_password' => 'New password',
+        'confirm_password' => 'Confirm password',
+        'save_password' => 'Update password',
+        'password_updated' => 'Password updated.',
+        'save' => 'Save changes',
+        'saving' => 'Saving…',
+        'updated' => 'Account updated.',
+
+        'verified' => 'Your email has been verified.',
+        'unverified' => 'Your email is not verified yet.',
+        'resend' => 'Resend verification email',
+        'verification_sent' => 'A new verification link was sent.',
+        'delete' => 'Delete account',
+        'delete_lead' => 'Permanently remove your account and its data.',
+        'delete_confirm_title' => 'Delete your account?',
+        'delete_confirm_body' => 'This cannot be undone. Enter your password to confirm.',
+        'cancel' => 'Cancel',
+        'logout' => 'Log out',
+    ],
+
+    'orders' => [
+        'meta_title' => 'Your orders',
+        'kicker' => 'Account',
+        'title' => 'Your orders',
+        'lead' => 'Track payments and open digital items from past purchases.',
+        'empty' => 'No orders yet',
+        'empty_lead' => 'When you place an order, it will show up here.',
+        'shop' => 'Start shopping',
+        'status' => [
+            'pending' => 'Payment pending',
+            'paid' => 'Paid',
+            'due_on_delivery' => 'Pay on delivery',
+            'failed' => 'Payment failed',
+        ],
     ],
 
     'order' => [
@@ -257,6 +326,9 @@ return [
         'qty' => 'Qty :count',
         'download' => 'Download',
         'access_pending' => 'Opens after payment',
+        'keep_number' => 'Important: save this order number so you can get back to your purchases later.',
+        'keep_number_with_email' => 'Important: save this order number so you can get back to your purchases later. If you create an account with the same email used on this order, all your purchases will appear under Your orders.',
+
         'subtotal' => 'Subtotal',
         'discount' => 'Discount',
         'tax' => 'Tax',
@@ -264,6 +336,9 @@ return [
         'free' => 'Free',
         'total' => 'Total',
         'keep' => 'Keep shopping',
+        'pay_now' => 'Pay with Paymob',
+        'payment_success' => 'Payment received. Thank you.',
+        'payment_cancelled' => 'Payment was cancelled or declined. You can try again.',
     ],
 
     'footer' => [
@@ -336,6 +411,11 @@ return [
     ],
 
     'payments' => [
+        'paymob' => [
+            'label' => 'Paymob',
+            'hint' => 'Pay securely by card or wallet. Stock is held until payment succeeds.',
+            'tag' => 'Card',
+        ],
         'cod' => [
             'label' => 'Cash payment',
             'hint' => 'Pay in cash when the order arrives.',

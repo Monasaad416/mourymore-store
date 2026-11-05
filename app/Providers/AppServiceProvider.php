@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Services\Cart;
+use App\Services\ClaimGuestOrders;
 use App\Support\SiteContentFileLoader;
 use Carbon\CarbonImmutable;
 use Filament\Actions\DeleteAction;
@@ -13,7 +14,9 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\Translation\Loader as TranslationLoader;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -48,6 +51,15 @@ class AppServiceProvider extends ServiceProvider
             }
 
             app(Cart::class)->claimFor($event->user);
+            app(ClaimGuestOrders::class)->claimFor($event->user);
+        });
+
+        Event::listen(Registered::class, function (Registered $event): void {
+            if (! $event->user instanceof User) {
+                return;
+            }
+
+            app(ClaimGuestOrders::class)->claimFor($event->user);
         });
     }
 
@@ -57,6 +69,8 @@ class AppServiceProvider extends ServiceProvider
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
+
+        Model::shouldBeStrict(! app()->isProduction());
 
         DB::prohibitDestructiveCommands(
             app()->isProduction(),

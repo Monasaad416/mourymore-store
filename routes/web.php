@@ -1,17 +1,22 @@
 <?php
 
+use App\Http\Controllers\CheckoutPageController;
 use App\Http\Controllers\DigitalDownloadController;
+use App\Http\Controllers\PaymobGoController;
+use App\Http\Controllers\PaymobReturnController;
+use App\Http\Controllers\PaymobWebhookController;
+use App\Http\Controllers\PlaceOrderController;
 use App\Http\Controllers\SitemapController;
 use App\Livewire\Store\ArticlePage;
 use App\Livewire\Store\ArticlesPage;
 use App\Livewire\Store\CartPage;
 use App\Livewire\Store\Catalog;
-use App\Livewire\Store\CheckoutPage;
 use App\Livewire\Store\CmsPage;
 use App\Livewire\Store\Home;
 use App\Livewire\Store\NewsItemPage;
 use App\Livewire\Store\NewsPage;
 use App\Livewire\Store\OrderPage;
+use App\Livewire\Store\OrdersPage;
 use App\Livewire\Store\ProductPage;
 use App\Livewire\Store\WishlistPage;
 use Illuminate\Support\Facades\Route;
@@ -38,12 +43,22 @@ Route::get('/c/{category:slug}', function () {
 Route::get('/p/{product:slug}', ProductPage::class)->name('product');
 Route::get('/cart', CartPage::class)->name('cart');
 Route::get('/wishlist', WishlistPage::class)->name('wishlist');
-Route::get('/checkout', CheckoutPage::class)->name('checkout');
-Route::get('/orders/{order:number}', OrderPage::class)->name('orders.show');
+Route::get('/checkout', CheckoutPageController::class)->name('checkout');
+Route::post('/checkout', PlaceOrderController::class)->name('checkout.place');
 Route::get('/downloads/{orderItem}', DigitalDownloadController::class)->middleware('signed')->name('downloads.show');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+Route::post('/paymob/webhook', PaymobWebhookController::class)->name('paymob.webhook');
+Route::get('/paymob/go/{order:number}', PaymobGoController::class)->name('paymob.go');
+Route::get('/paymob/return/{order:number}', PaymobReturnController::class)->name('paymob.return');
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/orders', OrdersPage::class)->name('orders.index');
+});
+
+Route::get('/orders/{order:number}', OrderPage::class)->name('orders.show');
+
+Route::middleware(['auth'])->group(function () {
+    Route::redirect('dashboard', '/settings/profile')->name('dashboard');
 });
 
 require __DIR__.'/settings.php';

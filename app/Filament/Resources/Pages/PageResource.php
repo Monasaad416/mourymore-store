@@ -25,6 +25,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class PageResource extends Resource
@@ -171,6 +172,12 @@ class PageResource extends Resource
                 TextColumn::make('sort')
                     ->label(__('filament/resources.pages.fields.sort'))
                     ->sortable(),
+            ])
+            ->filters([
+                TernaryFilter::make('is_published')
+                    ->label(__('filament/resources.pages.fields.is_published')),
+                TernaryFilter::make('show_in_footer')
+                    ->label(__('filament/resources.pages.fields.show_in_footer')),
             ])
             ->recordActions([
                 ViewAction::make(),

@@ -20,10 +20,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('cart_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->string('format', 16)->default('default');
             $table->unsignedInteger('qty');
             $table->timestamps();
 
-            $table->unique(['cart_id', 'product_id']);
+            $table->unique(['cart_id', 'product_id', 'format']);
         });
     }
 

@@ -23,7 +23,7 @@ class WishlistPage extends Component
         }
 
         $this->dispatch('basket-updated');
-        $this->dispatch('toast', message: __('store.wishlist.moved'));
+        $this->notifyCustomer(__('store.wishlist.moved'));
     }
 
     public function render(): View

@@ -19,6 +19,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class ShippingMethodResource extends Resource
@@ -104,6 +105,10 @@ class ShippingMethodResource extends Resource
                 IconColumn::make('is_active')
                     ->label(__('filament/resources.shipping_methods.fields.is_active'))
                     ->boolean(),
+            ])
+            ->filters([
+                TernaryFilter::make('is_active')
+                    ->label(__('filament/resources.shipping_methods.fields.is_active')),
             ])
             ->recordActions([
                 EditAction::make(),

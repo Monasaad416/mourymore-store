@@ -57,17 +57,48 @@
                         <span class="block text-[10px] text-ink/70">{{ __('store.nav.hello') }}</span>
                         <span class="block text-sm font-semibold leading-4">{{ auth()->check() ? auth()->user()->name : __('store.nav.account') }}</span>
                     </button>
-                    <div x-show="open" x-cloak @click.outside="open = false" class="absolute end-0 z-50 mt-2 w-56 rounded-md bg-white p-2 text-ink shadow-xl ring-1 ring-black/10">
+                    <div x-show="open" x-cloak @click.outside="open = false" class="absolute end-0 z-50 mt-2 w-60 rounded-md bg-white p-2 text-ink shadow-xl ring-1 ring-black/10">
+                        @php
+                            $menuItem = 'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm hover:bg-sand-100';
+                        @endphp
                         @auth
-                            <a href="{{ route('dashboard') }}" class="block rounded-md px-3 py-2 text-sm hover:bg-sand-100" wire:navigate>{{ __('store.nav.your_account') }}</a>
+                            <a href="{{ route('profile.edit') }}" class="{{ $menuItem }}" wire:navigate>
+                                <svg class="size-4 shrink-0 text-ink/55" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="3.2" /><path stroke-linecap="round" d="M5.5 19.2a6.5 6.5 0 0 1 13 0" /></svg>
+                                {{ __('store.nav.your_account') }}
+                            </a>
+                            <a href="{{ route('orders.index') }}" class="{{ $menuItem }}" wire:navigate>
+                                <svg class="size-4 shrink-0 text-ink/55" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h15l-1.4 8.2a1 1 0 0 1-1 .8H8.2a1 1 0 0 1-1-.8L5.2 4H2" /><circle cx="9" cy="20" r="1.2" fill="currentColor" stroke="none" /><circle cx="17" cy="20" r="1.2" fill="currentColor" stroke="none" /></svg>
+                                {{ __('store.nav.orders') }}
+                            </a>
                         @else
-                            <a href="{{ route('login') }}" class="block rounded-md px-3 py-2 text-sm hover:bg-sand-100" wire:navigate>{{ __('store.nav.sign_in') }}</a>
+                            <a href="{{ route('login') }}" class="{{ $menuItem }}" wire:navigate>
+                                <svg class="size-4 shrink-0 text-ink/55" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="15" r="3" /><path stroke-linecap="round" d="M11 15h9M16.5 15v-2.5M19.5 15v-2" /></svg>
+                                {{ __('store.nav.sign_in') }}
+                            </a>
                             @if (Route::has('register'))
-                                <a href="{{ route('register') }}" class="block rounded-md px-3 py-2 text-sm hover:bg-sand-100" wire:navigate>{{ __('store.nav.register') }}</a>
+                                <a href="{{ route('register') }}" class="{{ $menuItem }}" wire:navigate>
+                                    <svg class="size-4 shrink-0 text-ink/55" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="8" r="3" /><path stroke-linecap="round" d="M4.2 19a5.8 5.8 0 0 1 11.2-1.6M19 8v6M16 11h6" /></svg>
+                                    {{ __('store.nav.register') }}
+                                </a>
                             @endif
                         @endauth
-                        <a href="{{ route('wishlist') }}" class="block rounded-md px-3 py-2 text-sm hover:bg-sand-100" wire:navigate>{{ __('store.nav.wishlist') }}</a>
-                        <a href="{{ route('cart') }}" class="block rounded-md px-3 py-2 text-sm hover:bg-sand-100" wire:navigate>{{ __('store.nav.cart') }}</a>
+                        <a href="{{ route('wishlist') }}" class="{{ $menuItem }}" wire:navigate>
+                            <svg class="size-4 shrink-0 text-ink/55" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linejoin="round" d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2 4 4 0 0 1 7 2c0 4.6-7 9-7 9Z" /></svg>
+                            {{ __('store.nav.wishlist') }}
+                        </a>
+                        <a href="{{ route('cart') }}" class="{{ $menuItem }}" wire:navigate>
+                            <svg class="size-4 shrink-0 text-ink/55" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" d="M6 7h15l-1.5 9h-12L5 4H2" /><circle cx="9" cy="20" r="1.2" fill="currentColor" stroke="none" /><circle cx="18" cy="20" r="1.2" fill="currentColor" stroke="none" /></svg>
+                            {{ __('store.nav.cart') }}
+                        </a>
+                        @auth
+                            <form method="POST" action="{{ route('logout') }}" class="mt-1 border-t border-sand-200 pt-1" wire:ignore>
+                                @csrf
+                                <button type="submit" class="{{ $menuItem }} w-full cursor-pointer text-start" data-test="store-logout-button">
+                                    <svg class="size-4 shrink-0 text-ink/55" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3" /><path stroke-linecap="round" stroke-linejoin="round" d="M14 16l4-4-4-4M10 12h8" /></svg>
+                                    {{ __('store.account.logout') }}
+                                </button>
+                            </form>
+                        @endauth
                     </div>
                 </div>
 

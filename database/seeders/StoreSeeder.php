@@ -540,6 +540,9 @@ class StoreSeeder extends Seeder
                 'author' => 'Hana Farid',
                 'author_ar' => 'هنا فريد',
                 'pages' => 240,
+                'offers_print' => true,
+                'offers_digital' => false,
+                'digital_price' => null,
                 'file_path' => null,
             ], ['author']),
         );
@@ -649,6 +652,9 @@ class StoreSeeder extends Seeder
                 'author' => 'Hana Farid',
                 'author_ar' => 'هنا فريد',
                 'pages' => 128,
+                'offers_print' => true,
+                'offers_digital' => false,
+                'digital_price' => null,
                 'file_path' => null,
             ], ['author']),
         );
@@ -722,6 +728,8 @@ class StoreSeeder extends Seeder
             ], ['name']),
         );
 
+        /*
+        // Cash on delivery — kept for future use. Currently disabled (is_active false + Payments::COD_ENABLED).
         PaymentMethod::query()->updateOrCreate(['code' => 'cod'], $this->translations([
             'name' => 'Cash payment',
             'name_ar' => 'الدفع نقدًا',
@@ -731,6 +739,7 @@ class StoreSeeder extends Seeder
             'is_active' => false,
             'sort' => 99,
         ], ['name', 'hint']));
+        */
 
         PaymentMethod::query()->updateOrCreate(['code' => 'paymob'], $this->translations([
             'name' => 'Paymob',

@@ -6,12 +6,15 @@ use App\Filament\Resources\Entitlements\Pages\ManageEntitlements;
 use App\Models\Entitlement;
 use BackedEnum;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -85,6 +88,32 @@ class EntitlementResource extends Resource
                     ->label(__('filament/resources.entitlements.fields.granted_at'))
                     ->dateTime()
                     ->sortable(),
+            ])
+            ->filters([
+                SelectFilter::make('product_id')
+                    ->label(__('filament/resources.entitlements.fields.product'))
+                    ->relationship('product', 'name')
+                    ->searchable()
+                    ->preload(),
+                Filter::make('granted_at')
+                    ->label(__('filament/resources.entitlements.fields.granted_at'))
+                    ->form([
+                        DatePicker::make('from')
+                            ->label(__('filament/resources.filters.from')),
+                        DatePicker::make('until')
+                            ->label(__('filament/resources.filters.until')),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'] ?? null,
+                                fn (Builder $builder, mixed $date): Builder => $builder->whereDate('granted_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['until'] ?? null,
+                                fn (Builder $builder, mixed $date): Builder => $builder->whereDate('granted_at', '<=', $date),
+                            );
+                    }),
             ])
             ->recordActions([
                 ViewAction::make(),

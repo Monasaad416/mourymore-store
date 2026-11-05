@@ -27,8 +27,8 @@ class Home extends Component
                 ->take(8)
                 ->get(),
             'products' => Product::query()->where('kind', ProductKind::Product)->orderByDesc('is_featured')->orderByDesc('rating')->take(8)->get(),
-            'books' => Product::query()->where('kind', ProductKind::Book)->orderByDesc('rating')->take(6)->get(),
-            'courses' => Product::query()->where('kind', ProductKind::Course)->orderByDesc('rating')->take(6)->get(),
+            'books' => Product::query()->where('kind', ProductKind::Book)->orderByDesc('rating')->take(3)->get(),
+            'courses' => Product::query()->where('kind', ProductKind::Course)->orderByDesc('rating')->take(3)->get(),
             'wishedIds' => app(Wishlist::class)->ids(),
             'testimonials' => Schema::hasTable('testimonials')
                 ? Testimonial::query()->published()->orderBy('sort')->take(4)->get()

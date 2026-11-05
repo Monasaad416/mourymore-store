@@ -122,6 +122,12 @@ class SiteContentResource extends Resource
                         ->orderBy('group')
                         ->pluck('group', 'group')
                         ->all()),
+                SelectFilter::make('input')
+                    ->label(__('filament/resources.site_contents.fields.input'))
+                    ->options([
+                        'text' => __('filament/resources.site_contents.fields.input_text'),
+                        'textarea' => __('filament/resources.site_contents.fields.input_textarea'),
+                    ]),
             ])
             ->recordActions([
                 EditAction::make(),

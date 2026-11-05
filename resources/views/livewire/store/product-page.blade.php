@@ -29,12 +29,28 @@
             </div>
 
             <div class="mt-5 flex flex-wrap items-end gap-3">
-                <p class="text-3xl font-semibold tracking-tight">{{ $product->formattedPrice() }}</p>
-                @if ($product->discountPercent())
+                <p class="text-3xl font-semibold tracking-tight">{{ $formattedUnitPrice }}</p>
+                @if ($selectedFormat !== \App\Enums\BookFormat::Digital && $product->discountPercent())
                     <p class="text-lg text-ink/35 line-through">{{ $product->formattedComparePrice() }}</p>
                     <p class="rounded-full bg-deal/10 px-2.5 py-1 text-sm font-semibold text-deal">{{ __('store.product.save_percent', ['percent' => $product->discountPercent()]) }}</p>
                 @endif
             </div>
+
+            @if (count($formats) > 1)
+                <div class="mt-5 grid gap-2 sm:grid-cols-2">
+                    @foreach ($formats as $bookFormat)
+                        <label class="flex cursor-pointer items-start gap-3 rounded-2xl px-4 py-3 ring-1 {{ $format === $bookFormat->value ? 'bg-nile-50 ring-nile-700' : 'ring-black/10 hover:bg-sand-50' }}">
+                            <input type="radio" wire:model.live="format" value="{{ $bookFormat->value }}" class="mt-1 accent-nile-800">
+                            <span class="min-w-0">
+                                <span class="block text-sm font-semibold">{{ __('store.product.format_'.$bookFormat->value) }}</span>
+                                <span class="mt-0.5 block text-xs text-ink/55">{{ \App\Support\Money::format($product->priceForFormat($bookFormat)) }}</span>
+                            </span>
+                        </label>
+                    @endforeach
+                </div>
+            @elseif (count($formats) === 1)
+                <p class="mt-3 text-sm text-nile-800">{{ __('store.product.format_'.$formats[0]->value) }}</p>
+            @endif
             @php($taxSettings = \App\Models\SiteSetting::current())
             <p class="mt-1 text-xs text-ink/45">
                 @if ($taxSettings->taxPercent() > 0)
@@ -46,7 +62,7 @@
                 @endif
             </p>
 
-            @if ($product->tracksStock())
+            @if ($needsShipping)
                 <div class="mt-5 rounded-3xl bg-sand-50 p-4 ring-1 ring-sand-200">
                     <p class="text-sm font-semibold text-nile-800">{{ $quote['note'] }}</p>
                     <p class="mt-1 text-sm text-ink/70">{{ __('store.product.deliver_to') }} <span class="font-semibold text-ink">{{ \App\Support\Shipping::label($governorate) }}</span> · {{ $quote['eta'] }}</p>
@@ -69,10 +85,10 @@
                     <span class="w-8 text-center text-sm font-semibold">{{ $qty }}</span>
                     <button type="button" wire:click="increment" class="grid size-11 place-items-center text-lg" aria-label="{{ __('store.product.increase') }}">+</button>
                 </div>
-                <p class="text-sm {{ $product->inStock() ? 'text-nile-800' : 'text-deal' }}">
-                    @if (! $product->tracksStock())
+                <p class="text-sm {{ $canBuy ? 'text-nile-800' : 'text-deal' }}">
+                    @if ($selectedFormat === \App\Enums\BookFormat::Digital || ! $product->tracksStock())
                         {{ __('store.product.available') }}
-                    @elseif ($product->inStock())
+                    @elseif ($product->availableQuantity() > 0)
                         {{ __('store.product.in_stock', ['count' => $product->availableQuantity()]) }}
                     @else
                         {{ __('store.product.out_soon') }}
@@ -81,10 +97,10 @@
             </div>
 
             <div class="mt-4 grid gap-2 sm:grid-cols-2">
-                <button type="button" wire:click="add" wire:loading.attr="disabled" wire:target="add" @disabled(! $product->inStock()) class="rounded-full bg-gold-500 py-3 text-sm font-semibold text-white hover:bg-gold-600 disabled:cursor-not-allowed disabled:bg-sand-200 disabled:text-ink/40">
+                <button type="button" wire:click="add" wire:loading.attr="disabled" wire:target="add" @disabled(! $canBuy) class="rounded-full bg-gold-500 py-3 text-sm font-semibold text-white hover:bg-gold-600 disabled:cursor-not-allowed disabled:bg-sand-200 disabled:text-ink/40">
                     {{ __('store.product.add') }}
                 </button>
-                <button type="button" wire:click="buyNow" @disabled(! $product->inStock()) class="rounded-full bg-nile-900 py-3 text-sm font-semibold text-white hover:bg-nile-800 disabled:cursor-not-allowed disabled:bg-sand-200 disabled:text-ink/40">
+                <button type="button" wire:click="buyNow" @disabled(! $canBuy) class="rounded-full bg-nile-900 py-3 text-sm font-semibold text-white hover:bg-nile-800 disabled:cursor-not-allowed disabled:bg-sand-200 disabled:text-ink/40">
                     {{ __('store.product.buy') }}
                 </button>
             </div>
@@ -103,7 +119,7 @@
             @if ($product->lessons->isNotEmpty())
                 <ol class="mt-6 max-w-2xl space-y-3">
                     @foreach ($product->lessons as $lesson)
-                        @php($open = $lesson->is_preview || $hasCourseAccess)
+                        @php($open = $lesson->is_preview || ($hasCourseAccess ?? false))
                         <li class="flex items-baseline justify-between gap-4 border-t border-sand-200 pt-3 text-sm">
                             <span>{{ $lesson->displayTitle() }}</span>
                             <span class="shrink-0 text-ink/50">

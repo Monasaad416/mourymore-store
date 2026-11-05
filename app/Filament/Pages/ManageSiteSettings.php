@@ -101,14 +101,17 @@ class ManageSiteSettings extends Page
                     ])
                     ->columnSpanFull(),
                 Section::make(__('filament/resources.site_settings.sections.media'))
+                    ->description(__('filament/resources.site_settings.sections.media_help'))
                     ->columns(3)
                     ->schema([
                         FileUpload::make('logo')
                             ->label(__('filament/resources.site_settings.fields.logo'))
+                            ->helperText(__('filament/resources.site_settings.fields.logo_help'))
                             ->disk('public')
                             ->directory('branding')
                             ->visibility('public')
                             ->image()
+                            ->imagePreviewHeight('120')
                             ->acceptedFileTypes([
                                 'image/jpeg',
                                 'image/png',
@@ -126,6 +129,7 @@ class ManageSiteSettings extends Page
                             ->directory('branding')
                             ->visibility('public')
                             ->image()
+                            ->imagePreviewHeight('80')
                             ->acceptedFileTypes([
                                 'image/png',
                                 'image/x-icon',
@@ -140,10 +144,12 @@ class ManageSiteSettings extends Page
                             ]),
                         FileUpload::make('cover')
                             ->label(__('filament/resources.site_settings.fields.cover'))
+                            ->helperText(__('filament/resources.site_settings.fields.cover_help'))
                             ->disk('public')
                             ->directory('branding')
                             ->visibility('public')
                             ->image()
+                            ->imagePreviewHeight('160')
                             ->acceptedFileTypes([
                                 'image/jpeg',
                                 'image/png',
@@ -155,6 +161,7 @@ class ManageSiteSettings extends Page
                             ]),
                     ])
                     ->columnSpanFull(),
+
                 Section::make(__('filament/resources.site_settings.sections.commerce'))
                     ->columns(2)
                     ->schema([
@@ -244,9 +251,10 @@ class ManageSiteSettings extends Page
                 'en' => $data['tagline']['en'] ?? '',
                 'ar' => $data['tagline']['ar'] ?? '',
             ],
-            'logo' => filled($data['logo'] ?? null) ? $data['logo'] : $settings->logo,
-            'favicon' => filled($data['favicon'] ?? null) ? $data['favicon'] : $settings->favicon,
-            'cover' => filled($data['cover'] ?? null) ? $data['cover'] : $settings->cover,
+            'logo' => $this->mediaPath($data['logo'] ?? null, $settings->logo),
+            'favicon' => $this->mediaPath($data['favicon'] ?? null, $settings->favicon),
+            'cover' => $this->mediaPath($data['cover'] ?? null, $settings->cover),
+
             'currency_code' => strtoupper(trim((string) ($data['currency_code'] ?? 'EGP'))),
             'currency_symbol_en' => trim((string) ($data['currency_symbol_en'] ?? 'EGP')),
             'currency_symbol_ar' => trim((string) ($data['currency_symbol_ar'] ?? 'ج.م')),
@@ -264,5 +272,18 @@ class ManageSiteSettings extends Page
             ->title(__('filament/resources.site_settings.saved'))
             ->success()
             ->send();
+    }
+
+    private function mediaPath(mixed $value, ?string $fallback): ?string
+    {
+        if (is_array($value)) {
+            $value = $value[0] ?? null;
+        }
+
+        if (! filled($value)) {
+            return $fallback;
+        }
+
+        return (string) $value;
     }
 }

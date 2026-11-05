@@ -9,6 +9,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -16,7 +17,10 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class SubscriptionResource extends Resource
 {
@@ -79,6 +83,33 @@ class SubscriptionResource extends Resource
                     ->label(__('filament/resources.subscriptions.fields.created_at'))
                     ->dateTime()
                     ->sortable(),
+            ])
+            ->filters([
+                SelectFilter::make('locale')
+                    ->label(__('filament/resources.subscriptions.fields.locale'))
+                    ->options([
+                        'ar' => __('filament/resources.locales.ar'),
+                        'en' => __('filament/resources.locales.en'),
+                    ]),
+                Filter::make('created_at')
+                    ->label(__('filament/resources.subscriptions.fields.created_at'))
+                    ->form([
+                        DatePicker::make('from')
+                            ->label(__('filament/resources.filters.from')),
+                        DatePicker::make('until')
+                            ->label(__('filament/resources.filters.until')),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'] ?? null,
+                                fn (Builder $builder, mixed $date): Builder => $builder->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['until'] ?? null,
+                                fn (Builder $builder, mixed $date): Builder => $builder->whereDate('created_at', '<=', $date),
+                            );
+                    }),
             ])
             ->recordActions([
                 EditAction::make(),

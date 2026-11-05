@@ -17,7 +17,9 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class CategoryResource extends Resource
 {
@@ -98,6 +100,14 @@ class CategoryResource extends Resource
                 TextColumn::make('products_count')
                     ->counts('products')
                     ->label(__('filament/resources.categories.fields.products')),
+            ])
+            ->filters([
+                TernaryFilter::make('has_products')
+                    ->label(__('filament/resources.filters.has_products'))
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->has('products'),
+                        false: fn (Builder $query): Builder => $query->doesntHave('products'),
+                    ),
             ])
             ->recordActions([
                 EditAction::make(),

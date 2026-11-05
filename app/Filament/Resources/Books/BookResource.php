@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Books;
 
 use App\Enums\ProductKind;
-use App\Enums\ProductType;
 use App\Filament\Catalog\CatalogForm;
 use App\Filament\Catalog\CatalogInfolist;
 use App\Filament\Resources\Books\Pages\CreateBook;
@@ -48,10 +47,11 @@ class BookResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return CatalogForm::configure($schema, typeOptions: [
-            ProductType::Physical->value => __('filament/resources.products.fields.type_printed_book'),
-            ProductType::Digital->value => __('filament/resources.products.fields.type_digital_book'),
-        ], defaultCategorySlug: 'books');
+        return CatalogForm::configure(
+            $schema,
+            defaultCategorySlug: 'books',
+            bookFormats: true,
+        );
     }
 
     public static function infolist(Schema $schema): Schema

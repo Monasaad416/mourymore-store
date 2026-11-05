@@ -18,6 +18,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class PaymentMethodResource extends Resource
@@ -96,6 +97,12 @@ class PaymentMethodResource extends Resource
                     ->boolean(),
                 TextColumn::make('sort')
                     ->label(__('filament/resources.payment_methods.fields.sort')),
+            ])
+            ->filters([
+                TernaryFilter::make('is_active')
+                    ->label(__('filament/resources.payment_methods.fields.is_active')),
+                TernaryFilter::make('collects_on_delivery')
+                    ->label(__('filament/resources.payment_methods.fields.collects_on_delivery')),
             ])
             ->recordActions([
                 EditAction::make(),

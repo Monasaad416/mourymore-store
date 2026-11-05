@@ -6,6 +6,7 @@ use App\Concerns\PasswordValidationRules;
 use Exception;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Js;
 use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Actions\ConfirmTwoFactorAuthentication;
 use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
@@ -114,7 +115,8 @@ class Security extends Component
 
         $this->reset('current_password', 'password', 'password_confirmation');
 
-        Flux::toast(variant: 'success', text: __('Password updated.'));
+        $this->js('window.storeToast && window.storeToast('.Js::from(__('store.account.password_updated')).')');
+        Flux::toast(variant: 'success', text: __('store.account.password_updated'));
     }
 
     /**

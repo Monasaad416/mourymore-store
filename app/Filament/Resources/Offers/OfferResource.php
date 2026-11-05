@@ -20,6 +20,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class OfferResource extends Resource
@@ -137,6 +139,16 @@ class OfferResource extends Resource
                     ->label(__('filament/resources.offers.fields.ends_at'))
                     ->dateTime()
                     ->placeholder('—'),
+            ])
+            ->filters([
+                SelectFilter::make('type')
+                    ->label(__('filament/resources.offers.fields.type'))
+                    ->options([
+                        'percent' => __('filament/resources.offers.fields.type_percent'),
+                        'fixed' => __('filament/resources.offers.fields.type_fixed'),
+                    ]),
+                TernaryFilter::make('is_active')
+                    ->label(__('filament/resources.offers.fields.is_active')),
             ])
             ->recordActions([
                 EditAction::make(),

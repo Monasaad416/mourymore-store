@@ -39,6 +39,8 @@
                 --color-accent: #dc2626;
                 --color-accent-foreground: #ffffff;
                 --theme-deal: #dc2626;
+                --theme-stock: #047857;
+                --theme-stock-soft: #ecfdf5;
                 --theme-star: #f0c040;
                 --theme-ink: #1c1408;
                 --theme-gold-300: #ffe7a3;
@@ -62,24 +64,20 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="store-shell min-h-screen antialiased">
+        @include('partials.store-toast')
+
         <livewire:store.nav />
 
         <main>
-            {{ $slot }}
+            @isset($slot)
+                {{ $slot }}
+            @else
+                @yield('content')
+            @endisset
         </main>
 
         @include('partials.store.footer')
-
-        <div
-            x-data="{ show: false, message: '' }"
-            x-on:toast.window="message = ($event.detail && $event.detail.message) ? $event.detail.message : $el.dataset.fallback; show = true; setTimeout(() => show = false, 2400)"
-            x-show="show"
-            x-transition.opacity
-            x-cloak
-            data-fallback="{{ __('store.toast.saved') }}"
-            class="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-white shadow-xl"
-        >
-            <span x-text="message"></span>
-        </div>
     </body>
 </html>
+
+

@@ -18,6 +18,9 @@ return [
 
     'cart_ttl_days' => 30,
 
+    // Set true and restore PaymentMethod `cod` in StoreSeeder to re-enable cash on delivery.
+    'cod_enabled' => false,
+
     'greater_cairo' => ['Cairo', 'Giza', 'Qalyubia'],
 
     'delta' => [
@@ -62,6 +65,12 @@ return [
     ],
 
     'payments' => [
+        'paymob' => [
+            'label' => 'Paymob',
+            'hint' => 'Pay securely by card or wallet. Stock is held until payment succeeds.',
+            'tag' => 'Card',
+        ],
+        // Legacy labels kept for older orders / content copy:
         'instapay' => [
             'label' => 'InstaPay',
             'hint' => 'We send an InstaPay request by SMS after you place the order.',

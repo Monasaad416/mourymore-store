@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Payments\Pages;
 
+use App\Filament\Actions\RefundPaymentAction;
 use App\Filament\Resources\Payments\PaymentResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -13,6 +14,7 @@ class ViewPayment extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            RefundPaymentAction::make(),
             EditAction::make(),
         ];
     }

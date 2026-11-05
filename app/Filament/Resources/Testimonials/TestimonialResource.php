@@ -19,6 +19,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class TestimonialResource extends Resource
@@ -105,6 +106,10 @@ class TestimonialResource extends Resource
                 IconColumn::make('is_published')
                     ->label(__('filament/resources.testimonials.fields.is_published'))
                     ->boolean(),
+            ])
+            ->filters([
+                TernaryFilter::make('is_published')
+                    ->label(__('filament/resources.testimonials.fields.is_published')),
             ])
             ->recordActions([
                 EditAction::make(),

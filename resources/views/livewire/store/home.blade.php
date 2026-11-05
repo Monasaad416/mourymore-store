@@ -1,7 +1,7 @@
 <div>
     <section class="mx-auto max-w-7xl px-4 pt-4">
-        <div class="grid overflow-hidden rounded-md bg-gold-500 text-ink lg:min-h-[32rem] lg:grid-cols-2">
-            <div class="flex flex-col justify-center gap-6 p-7 sm:p-10 lg:p-12">
+        <div class="grid overflow-hidden rounded-md text-ink lg:grid-cols-2">
+            <div class="flex flex-col justify-center gap-6 bg-gold-500 p-7 sm:p-10 lg:p-12">
                 <p class="text-xs font-semibold uppercase">{{ __('store.home.kicker') }}</p>
                 <h1 class="font-display text-4xl leading-tight text-balance sm:text-5xl">{{ __('store.home.headline') }}</h1>
                 <p class="max-w-lg text-base leading-7">{{ __('store.home.lead') }}</p>
@@ -10,8 +10,8 @@
                     <a href="{{ route('shop') }}" class="rounded-md bg-nile-900 px-5 py-3 text-sm font-semibold text-white" wire:navigate>{{ __('store.home.cta_all') }}</a>
                 </div>
             </div>
-            <div class="relative h-72 sm:h-96 lg:h-auto">
-                <img src="{{ \App\Models\SiteSetting::current()->coverUrl() }}" alt="{{ \App\Models\SiteSetting::current()->displayName() }}" class="absolute inset-0 h-full w-full object-fit">
+            <div class="relative min-h-72 lg:min-h-full">
+                <img src="{{ \App\Models\SiteSetting::current()->coverUrl() }}" alt="{{ \App\Models\SiteSetting::current()->displayName() }}" class="absolute inset-0 size-full object-fill">
             </div>
         </div>
 

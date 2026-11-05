@@ -10,11 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property int $cart_id
  * @property int $product_id
+ * @property string $format
  * @property int $qty
  */
 #[Fillable([
     'cart_id',
     'product_id',
+    'format',
     'qty',
 ])]
 class CartItem extends Model

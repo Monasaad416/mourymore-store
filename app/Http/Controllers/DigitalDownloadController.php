@@ -16,8 +16,11 @@ class DigitalDownloadController extends Controller
 
         $orderItem->load('product.bookDetail');
         $path = $orderItem->product?->bookDetail?->file_path;
-        abort_unless(is_string($path) && $path !== '' && Storage::disk('local')->exists($path), 404);
+        abort_unless(is_string($path) && $path !== '', 404);
 
-        return Storage::disk('local')->download($path);
+        $disk = Storage::disk('public');
+        abort_unless($disk->exists($path), 404);
+
+        return $disk->download($path);
     }
 }

@@ -1,4 +1,21 @@
 <div class="mx-auto max-w-7xl px-4 py-8">
+    @if ($payRedirectUrl !== '')
+        <div
+            wire:key="pay-redirect-{{ md5($payRedirectUrl) }}"
+            data-url="{{ $payRedirectUrl }}"
+            x-data
+            x-init="window.location.assign($el.dataset.url)"
+            class="sr-only"
+            aria-hidden="true"
+        >{{ __('store.checkout.placing') }}</div>
+        <noscript>
+            <meta http-equiv="refresh" content="0;url={{ $payRedirectUrl }}">
+            <p class="mb-4 rounded-2xl bg-nile-50 px-4 py-3 text-sm">
+                <a href="{{ $payRedirectUrl }}" class="font-semibold text-nile-800 underline">{{ __('store.order.pay_now') }}</a>
+            </p>
+        </noscript>
+    @endif
+
     <p class="text-xs font-semibold text-nile-700 uppercase">{{ __('store.checkout.kicker') }}</p>
     <h1 class="font-display mt-1 text-4xl">{{ __('store.checkout.title') }}</h1>
     <ol class="mt-4 flex flex-wrap gap-3 text-sm text-ink/50">
@@ -11,48 +28,58 @@
         <p class="mt-4 rounded-2xl bg-deal/10 px-4 py-3 text-sm text-deal">{{ $message }}</p>
     @enderror
 
-    <form wire:submit="placeOrder" class="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_340px]">
+    {{-- Classic POST (not wire:submit): real HTTP 302 → /paymob/go → Paymob. --}}
+    <form
+        id="store-checkout-form"
+        method="POST"
+        action="{{ route('checkout.place') }}"
+        class="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_340px]"
+    >
+        @csrf
+        <input type="hidden" name="checkout_token" value="{{ $checkoutToken }}">
+        <input type="hidden" name="cart_token" value="{{ app(\App\Services\Cart::class)->token() }}">
+
         <div class="space-y-4">
             <section class="rounded-[2rem] bg-white p-5 ring-1 ring-black/5 sm:p-6">
                 <h2 class="font-semibold">{{ __('store.checkout.address') }}</h2>
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
                     <label class="block sm:col-span-2">
                         <span class="text-xs font-medium text-ink/60">{{ __('store.checkout.full_name') }}</span>
-                        <input wire:model="name" type="text" autocomplete="name" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none focus:ring-nile-700">
+                        <input wire:model="name" name="name" value="{{ $name }}" type="text" autocomplete="name" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none focus:ring-nile-700">
                         @error('name') <span class="mt-1 block text-xs text-deal">{{ $message }}</span> @enderror
                     </label>
                     <label class="block">
                         <span class="text-xs font-medium text-ink/60">{{ __('store.checkout.mobile') }}</span>
-                        <input wire:model="phone" type="tel" inputmode="numeric" placeholder="01012345678" autocomplete="tel" dir="ltr" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none focus:ring-nile-700">
+                        <input wire:model="phone" name="phone" value="{{ $phone }}" type="tel" inputmode="numeric" placeholder="01012345678" autocomplete="tel" dir="ltr" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none focus:ring-nile-700">
                         @error('phone') <span class="mt-1 block text-xs text-deal">{{ $message }}</span> @enderror
                     </label>
                     <label class="block">
                         <span class="text-xs font-medium text-ink/60">{{ __('store.checkout.email') }} <span class="text-ink/35">({{ __('store.checkout.optional') }})</span></span>
-                        <input wire:model="email" type="email" autocomplete="email" dir="ltr" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none focus:ring-nile-700">
+                        <input wire:model="email" name="email" value="{{ $email }}" type="email" autocomplete="email" dir="ltr" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none focus:ring-nile-700">
                         @error('email') <span class="mt-1 block text-xs text-deal">{{ $message }}</span> @enderror
                     </label>
                     <label class="block">
                         <span class="text-xs font-medium text-ink/60">{{ __('store.checkout.governorate') }}</span>
-                        <select wire:model.live="governorate" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none">
+                        <select wire:model.live="governorate" name="governorate" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none">
                             @foreach ($governorates as $governorateName)
-                                <option value="{{ $governorateName }}">{{ \App\Support\Shipping::label($governorateName) }}</option>
+                                <option value="{{ $governorateName }}" @selected($governorate === $governorateName)>{{ \App\Support\Shipping::label($governorateName) }}</option>
                             @endforeach
                         </select>
                         @error('governorate') <span class="mt-1 block text-xs text-deal">{{ $message }}</span> @enderror
                     </label>
                     <label class="block">
                         <span class="text-xs font-medium text-ink/60">{{ __('store.checkout.city') }}</span>
-                        <input wire:model="city" type="text" placeholder="{{ __('store.checkout.city_placeholder') }}" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none focus:ring-nile-700">
+                        <input wire:model="city" name="city" value="{{ $city }}" type="text" placeholder="{{ __('store.checkout.city_placeholder') }}" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none focus:ring-nile-700">
                         @error('city') <span class="mt-1 block text-xs text-deal">{{ $message }}</span> @enderror
                     </label>
                     <label class="block sm:col-span-2">
                         <span class="text-xs font-medium text-ink/60">{{ __('store.checkout.address_label') }}</span>
-                        <input wire:model="address" type="text" placeholder="{{ __('store.checkout.address_placeholder') }}" autocomplete="street-address" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none focus:ring-nile-700">
+                        <input wire:model="address" name="address" value="{{ $address }}" type="text" placeholder="{{ __('store.checkout.address_placeholder') }}" autocomplete="street-address" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none focus:ring-nile-700">
                         @error('address') <span class="mt-1 block text-xs text-deal">{{ $message }}</span> @enderror
                     </label>
                     <label class="block sm:col-span-2">
                         <span class="text-xs font-medium text-ink/60">{{ __('store.checkout.notes') }} <span class="text-ink/35">({{ __('store.checkout.optional') }})</span></span>
-                        <input wire:model="notes" type="text" placeholder="{{ __('store.checkout.notes_placeholder') }}" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none">
+                        <input wire:model="notes" name="notes" value="{{ $notes }}" type="text" placeholder="{{ __('store.checkout.notes_placeholder') }}" class="mt-1 h-12 w-full rounded-2xl bg-sand-50 px-4 text-sm ring-1 ring-black/10 outline-none">
                     </label>
                 </div>
             </section>
@@ -60,20 +87,24 @@
             <section class="rounded-[2rem] bg-white p-5 ring-1 ring-black/5 sm:p-6">
                 <h2 class="font-semibold">{{ __('store.checkout.payment') }}</h2>
                 <p class="mt-1 text-sm text-ink/55">{{ __('store.checkout.payment_lead') }}</p>
-                <div class="mt-4 grid gap-2">
-                    @foreach ($payments as $key => $method)
-                        <label class="flex cursor-pointer items-start gap-3 rounded-2xl px-4 py-3 ring-1 {{ $payment === $key ? 'bg-nile-50 ring-nile-700' : 'ring-black/10 hover:bg-sand-50' }}">
-                            <input type="radio" wire:model.live="payment" value="{{ $key }}" class="mt-1 accent-nile-800">
-                            <span class="min-w-0">
-                                <span class="flex flex-wrap items-center gap-2">
-                                    <span class="font-semibold">{{ $method['label'] }}</span>
-                                    <span class="rounded-full bg-sand-100 px-2 py-0.5 text-[11px] font-semibold text-nile-800">{{ $method['tag'] }}</span>
+                @if ($payments === [])
+                    <p class="mt-4 rounded-2xl bg-deal/10 px-4 py-3 text-sm text-deal">{{ __('store.checkout.payment_unavailable') }}</p>
+                @else
+                    <div class="mt-4 grid gap-2">
+                        @foreach ($payments as $key => $method)
+                            <label class="flex cursor-pointer items-start gap-3 rounded-2xl px-4 py-3 ring-1 {{ $payment === $key ? 'bg-nile-50 ring-nile-700' : 'ring-black/10 hover:bg-sand-50' }}">
+                                <input type="radio" wire:model.live="payment" name="payment" value="{{ $key }}" @checked($payment === $key) class="mt-1 accent-nile-800">
+                                <span class="min-w-0">
+                                    <span class="flex flex-wrap items-center gap-2">
+                                        <span class="font-semibold">{{ $method['label'] }}</span>
+                                        <span class="rounded-full bg-sand-100 px-2 py-0.5 text-[11px] font-semibold text-nile-800">{{ $method['tag'] }}</span>
+                                    </span>
+                                    <span class="mt-1 block text-sm text-ink/60">{{ $method['hint'] }}</span>
                                 </span>
-                                <span class="mt-1 block text-sm text-ink/60">{{ $method['hint'] }}</span>
-                            </span>
-                        </label>
-                    @endforeach
-                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                @endif
                 @error('payment') <span class="mt-2 block text-xs text-deal">{{ $message }}</span> @enderror
             </section>
         </div>
@@ -95,7 +126,7 @@
 
             <label class="mt-5 block">
                 <span class="text-xs font-medium text-ink/60">{{ __('store.checkout.promo', ['code' => $promoCode]) }}</span>
-                <input wire:model.blur="promo" type="text" dir="ltr" class="mt-1 h-11 w-full rounded-2xl bg-sand-50 px-4 text-sm uppercase ring-1 ring-black/10 outline-none">
+                <input wire:model.blur="promo" name="promo" value="{{ $promo }}" type="text" dir="ltr" class="mt-1 h-11 w-full rounded-2xl bg-sand-50 px-4 text-sm uppercase ring-1 ring-black/10 outline-none">
             </label>
 
             <dl class="mt-4 space-y-2 border-t border-sand-200 pt-4 text-sm">
@@ -117,10 +148,21 @@
                     <dd class="text-2xl font-semibold">{{ \App\Support\Money::format($total) }}</dd>
                 </div>
             </dl>
-            <p class="mt-2 text-xs leading-5 text-ink/50">{{ __('store.checkout.free_note', ['eta' => $quote['eta'], 'amount' => $freeOver]) }}</p>
-            <button type="submit" class="mt-5 w-full rounded-full bg-gold-500 py-3 text-sm font-semibold text-white hover:bg-gold-600" wire:loading.attr="disabled">
-                <span wire:loading.remove wire:target="placeOrder">{{ __('store.checkout.place') }}</span>
-                <span wire:loading wire:target="placeOrder">{{ __('store.checkout.placing') }}</span>
+            @if ($ships)
+                <p class="mt-2 text-xs leading-5 text-ink/50">{{ __('store.checkout.free_note', ['eta' => $quote['eta'], 'amount' => $freeOver]) }}</p>
+            @else
+                <p class="mt-2 text-xs leading-5 text-ink/50">{{ __('store.checkout.digital_note') }}</p>
+            @endif
+            {{-- Native submit only — no Alpine "placing" lock (that stuck disabled with zero network). --}}
+            <button
+                type="submit"
+                form="store-checkout-form"
+                formmethod="POST"
+                formaction="{{ route('checkout.place') }}"
+                @disabled(! $canPlaceOrder)
+                class="mt-5 w-full rounded-full bg-gold-500 py-3 text-sm font-semibold text-white hover:bg-gold-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+                {{ __('store.checkout.place') }}
             </button>
         </aside>
     </form>

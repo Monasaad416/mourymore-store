@@ -93,6 +93,16 @@ class Order extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function refundablePayment(): ?Payment
+    {
+        return $this->payments()
+            ->where('gateway', 'paymob')
+            ->where('status', 'paid')
+            ->whereNotNull('transaction_id')
+            ->latest('id')
+            ->first();
+    }
+
     /**
      * @return HasMany<StockReservation, $this>
      */

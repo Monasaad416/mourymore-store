@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BookFormat;
 use App\Enums\ProductKind;
 use App\Enums\ProductType;
 use App\Support\Media;
@@ -59,6 +60,13 @@ class Product extends Model
 
     /** @var list<string> */
     public array $translatable = ['name', 'brand', 'description', 'highlights'];
+
+    /**
+     * Needed for storefront stock/format helpers under Model::shouldBeStrict().
+     *
+     * @var list<string>
+     */
+    protected $with = ['bookDetail'];
 
     /**
      * @return array<string, string>
@@ -177,17 +185,132 @@ class Product extends Model
 
     public function tracksStock(): bool
     {
+        if ($this->kind === ProductKind::Book) {
+            return $this->offersPrint();
+        }
+
         return ($this->type ?? ProductType::Physical) !== ProductType::Digital;
     }
 
     public function inStock(): bool
     {
+        if ($this->kind === ProductKind::Book) {
+            return ($this->offersPrint() && $this->availableQuantity() > 0) || $this->offersDigital();
+        }
+
         return $this->availableQuantity() > 0;
     }
 
     public function canPurchase(int $qty): bool
     {
         return $qty > 0 && $qty <= $this->purchaseLimit();
+    }
+
+    public function offersPrint(): bool
+    {
+        if ($this->kind !== ProductKind::Book) {
+            return $this->tracksStock();
+        }
+
+        $detail = $this->bookDetail;
+
+        if ($detail instanceof BookDetail) {
+            return $detail->sellsPrint();
+        }
+
+        return ($this->type ?? ProductType::Physical) === ProductType::Physical;
+    }
+
+    public function offersDigital(): bool
+    {
+        if ($this->kind === ProductKind::Course) {
+            return true;
+        }
+
+        if ($this->kind !== ProductKind::Book) {
+            return ($this->type ?? ProductType::Physical) === ProductType::Digital;
+        }
+
+        $detail = $this->bookDetail;
+
+        return $detail instanceof BookDetail && $detail->sellsDigital();
+    }
+
+    /**
+     * @return list<BookFormat>
+     */
+    public function availableBookFormats(): array
+    {
+        if ($this->kind !== ProductKind::Book) {
+            return [];
+        }
+
+        $detail = $this->bookDetail;
+
+        if ($detail instanceof BookDetail) {
+            return $detail->availableFormats();
+        }
+
+        return ($this->type ?? ProductType::Physical) === ProductType::Digital
+            ? [BookFormat::Digital]
+            : [BookFormat::Print];
+    }
+
+    public function defaultBookFormat(): ?BookFormat
+    {
+        $formats = $this->availableBookFormats();
+
+        if ($formats === []) {
+            return null;
+        }
+
+        foreach ($formats as $format) {
+            if ($format === BookFormat::Print && $this->availableQuantity() > 0) {
+                return BookFormat::Print;
+            }
+        }
+
+        return $formats[0];
+    }
+
+    public function priceForFormat(?BookFormat $format): float
+    {
+        if ($format === BookFormat::Digital) {
+            $digitalPrice = $this->bookDetail?->digital_price;
+
+            if ($digitalPrice !== null && (float) $digitalPrice > 0) {
+                return round((float) $digitalPrice, 2);
+            }
+
+            // Digital-only books keep the main product price.
+            if (! $this->offersPrint()) {
+                return round((float) $this->price, 2);
+            }
+        }
+
+        return round((float) $this->price, 2);
+    }
+
+    public function canPurchaseFormat(?BookFormat $format, int $qty): bool
+    {
+        if ($format === null) {
+            return $this->canPurchase($qty);
+        }
+
+        if ($format === BookFormat::Digital) {
+            return $this->offersDigital() && $qty > 0 && $qty <= 8;
+        }
+
+        return $this->offersPrint() && $this->canPurchase($qty);
+    }
+
+    public function purchaseLimitFor(?BookFormat $format): int
+    {
+        if ($format === BookFormat::Digital) {
+            return $this->offersDigital() ? 8 : 0;
+        }
+
+        return $this->purchaseLimit();
     }
 
     public function displayName(): string

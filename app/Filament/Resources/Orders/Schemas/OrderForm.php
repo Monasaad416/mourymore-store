@@ -24,6 +24,7 @@ class OrderForm
                                 'paid' => __('filament/resources.statuses.paid'),
                                 'failed' => __('filament/resources.statuses.failed'),
                                 'due_on_delivery' => __('filament/resources.statuses.due_on_delivery'),
+                                'refunded' => __('filament/resources.statuses.refunded'),
                             ])
                             ->required(),
                         Select::make('delivery_status')

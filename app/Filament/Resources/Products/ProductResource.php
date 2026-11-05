@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products;
 
 use App\Enums\ProductKind;
+use App\Enums\ProductType;
 use App\Filament\Catalog\CatalogForm;
 use App\Filament\Catalog\CatalogInfolist;
 use App\Filament\Resources\Products\Pages\CreateProduct;
@@ -24,6 +25,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -96,6 +99,29 @@ class ProductResource extends Resource
                     ->label(__('filament/resources.products.fields.is_deal'))
                     ->boolean()
                     ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                SelectFilter::make('category_id')
+                    ->label(__('filament/resources.products.fields.category'))
+                    ->relationship('category', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('type')
+                    ->label(__('filament/resources.products.fields.type'))
+                    ->options([
+                        ProductType::Physical->value => __('filament/resources.products.fields.type_physical'),
+                        ProductType::Digital->value => __('filament/resources.products.fields.type_digital'),
+                    ]),
+                TernaryFilter::make('is_featured')
+                    ->label(__('filament/resources.products.fields.is_featured')),
+                TernaryFilter::make('is_deal')
+                    ->label(__('filament/resources.products.fields.is_deal')),
+                TernaryFilter::make('in_stock')
+                    ->label(__('filament/resources.filters.in_stock'))
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->where('stock', '>', 0),
+                        false: fn (Builder $query): Builder => $query->where('stock', '<=', 0),
+                    ),
             ])
             ->recordActions([
                 ViewAction::make(),

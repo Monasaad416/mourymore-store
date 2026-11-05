@@ -31,23 +31,31 @@
         <div class="mt-6 grid items-start gap-6 lg:grid-cols-[1fr_320px]">
             <div class="space-y-3">
                 @foreach ($lines as $line)
-                    @php($product = $line['product'])
-                    <article class="flex gap-4 rounded-3xl bg-white p-4 ring-1 ring-black/5" wire:key="cart-{{ $product->id }}">
+                    @php
+                        $product = $line['product'];
+                        $formatKey = $line['format_key'] ?? 'default';
+                    @endphp
+                    <article class="flex gap-4 rounded-3xl bg-white p-4 ring-1 ring-black/5" wire:key="cart-{{ $product->id }}-{{ $formatKey }}">
                         <a href="{{ route('product', $product) }}" wire:navigate class="shrink-0">
                             <img src="{{ $product->imageUrl() }}" alt="" class="size-24 rounded-2xl object-cover sm:size-28">
                         </a>
                         <div class="min-w-0 flex-1">
                             <a href="{{ route('product', $product) }}" class="font-semibold hover:text-nile-800" wire:navigate>{{ $product->displayName() }}</a>
-                            <p class="mt-1 text-xs text-ink/50">{{ $product->brand }}</p>
+                            <p class="mt-1 text-xs text-ink/50">
+                                {{ $product->brand }}
+                                @if (($line['format'] ?? null) instanceof \App\Enums\BookFormat)
+                                    · {{ __('store.product.format_'.$line['format']->value) }}
+                                @endif
+                            </p>
                             <p class="mt-2 text-sm font-semibold">{{ \App\Support\Money::format($line['line']) }}</p>
                             <div class="mt-3 flex flex-wrap items-center gap-3">
                                 <div class="flex items-center rounded-full ring-1 ring-black/10">
-                                    <button type="button" wire:click="setQty({{ $product->id }}, {{ $line['qty'] - 1 }})" class="grid size-9 place-items-center" aria-label="{{ __('store.cart.decrease') }}">−</button>
+                                    <button type="button" wire:click="setQty({{ $product->id }}, {{ $line['qty'] - 1 }}, '{{ $formatKey }}')" class="grid size-9 place-items-center" aria-label="{{ __('store.cart.decrease') }}">−</button>
                                     <span class="w-6 text-center text-sm">{{ $line['qty'] }}</span>
-                                    <button type="button" wire:click="setQty({{ $product->id }}, {{ $line['qty'] + 1 }})" class="grid size-9 place-items-center" aria-label="{{ __('store.cart.increase') }}">+</button>
+                                    <button type="button" wire:click="setQty({{ $product->id }}, {{ $line['qty'] + 1 }}, '{{ $formatKey }}')" class="grid size-9 place-items-center" aria-label="{{ __('store.cart.increase') }}">+</button>
                                 </div>
-                                <button type="button" wire:click="remove({{ $product->id }})" class="text-sm text-ink/55 hover:text-deal">{{ __('store.cart.remove') }}</button>
-                                <button type="button" wire:click="saveForLater({{ $product->id }})" class="text-sm font-medium text-nile-800">{{ __('store.cart.save') }}</button>
+                                <button type="button" wire:click="remove({{ $product->id }}, '{{ $formatKey }}')" class="text-sm text-ink/55 hover:text-deal">{{ __('store.cart.remove') }}</button>
+                                <button type="button" wire:click="saveForLater({{ $product->id }}, '{{ $formatKey }}')" class="text-sm font-medium text-nile-800">{{ __('store.cart.save') }}</button>
                             </div>
                         </div>
                     </article>
@@ -71,7 +79,7 @@
                     <p class="text-sm text-white/70">{{ __('store.cart.estimated') }}</p>
                     <p class="text-2xl font-semibold">{{ \App\Support\Money::format(\App\Models\SiteSetting::current()->addTaxTo($subtotal) + $quote['fee']) }}</p>
                 </div>
-                <a href="{{ route('checkout') }}" class="mt-5 flex items-center justify-center rounded-full bg-gold-500 py-3 text-sm font-semibold text-white hover:bg-gold-600" wire:navigate>
+                <a href="{{ route('checkout') }}" class="mt-5 flex items-center justify-center rounded-full bg-gold-500 py-3 text-sm font-semibold text-white hover:bg-gold-600">
                     {{ __('store.cart.checkout') }}
                 </a>
             </aside>

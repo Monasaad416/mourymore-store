@@ -1,8 +1,8 @@
 <?php
 
+use App\Enums\ProductKind;
 use App\Enums\ProductType;
 use App\Livewire\Actions\Logout;
-use App\Livewire\Store\CheckoutPage;
 use App\Livewire\Store\Home;
 use App\Models\Cart as CartModel;
 use App\Models\CartItem;
@@ -20,12 +20,23 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
+function placeStoreOrder(array $overrides = [])
+{
+    return test()->post(route('checkout.place'), array_merge([
+        'name' => 'Nour Hassan',
+        'phone' => '01012345678',
+        'governorate' => 'Cairo',
+        'city' => 'Nasr City',
+        'address' => '12 Abbas El Akkad',
+        'payment' => 'paymob',
+    ], $overrides));
+}
+
 function makeCatalogProduct(): Product
 {
     $category = Category::query()->create([
         'name' => 'Phones',
         'slug' => 'phones',
-        'icon' => 'phone',
         'blurb' => 'Phones',
         'sort' => 1,
     ]);
@@ -54,7 +65,7 @@ test('shopper can open a product, save it, and check out with a card payment', f
 
     Offer::query()->create([
         'code' => 'MOURYMORE_STORE10',
-        'name' => ['en' => 'Welcome', 'ar' => 'ترحيب'],
+        'name' => ['en' => 'Welcome', 'ar' => 'ØªØ±Ø­ÙŠØ¨'],
         'type' => 'percent',
         'value' => 10,
         'is_active' => true,
@@ -71,21 +82,12 @@ test('shopper can open a product, save it, and check out with a card payment', f
 
     expect(app(Cart::class)->count())->toBe(1);
 
-    Livewire::test(CheckoutPage::class)
-        ->set('name', 'Nour Hassan')
-        ->set('phone', '01012345678')
-        ->set('governorate', 'Cairo')
-        ->set('city', 'Nasr City')
-        ->set('address', '12 Abbas El Akkad')
-        ->set('payment', 'card')
-        ->set('promo', 'mourymore_store10')
-        ->call('placeOrder')
-        ->assertHasNoErrors();
+    placeStoreOrder(['promo' => 'mourymore_store10'])->assertRedirect();
 
     $order = Order::query()->first();
 
     expect($order)->not->toBeNull()
-        ->and($order->payment_method)->toBe('card')
+        ->and($order->payment_method)->toBe('paymob')
         ->and((float) $order->discount)->toBe(100.0)
         ->and((float) $order->tax)->toBe(0.0)
         ->and($order->currency)->toBe('EGP')
@@ -95,28 +97,24 @@ test('shopper can open a product, save it, and check out with a card payment', f
         ->and(StockReservation::query()->where('status', 'held')->count())->toBe(1)
         ->and($order->items()->first()?->displayName())->toBe('Test Phone')
         ->and($order->items()->first()?->name)->toBeArray()
-        ->and(CartItem::query()->count())->toBe(0);
+        ->and(CartItem::query()->count())->toBe(1);
+
+    Payment::query()->first()?->markPaid('paymob-cart-clear');
+
+    expect(CartItem::query()->count())->toBe(0);
 });
 
 test('placing the same checkout again returns the original order', function () {
     $product = makeCatalogProduct();
     app(Cart::class)->add($product->id);
 
-    $checkout = Livewire::test(CheckoutPage::class)
-        ->set('name', 'Nour Hassan')
-        ->set('phone', '01012345678')
-        ->set('governorate', 'Cairo')
-        ->set('city', 'Nasr City')
-        ->set('address', '12 Abbas El Akkad')
-        ->set('payment', 'card');
-
-    $checkout->call('placeOrder')->assertHasNoErrors();
+    placeStoreOrder()->assertRedirect();
 
     $order = Order::query()->first();
 
-    $checkout->call('placeOrder')
-        ->assertHasNoErrors()
-        ->assertRedirect(route('orders.show', $order));
+    expect($order)->not->toBeNull();
+
+    placeStoreOrder()->assertRedirect(route('paymob.go', $order));
 
     expect(Order::query()->count())->toBe(1)
         ->and(Payment::query()->count())->toBe(1)
@@ -124,11 +122,58 @@ test('placing the same checkout again returns the original order', function () {
         ->and(StockReservation::query()->where('status', 'held')->count())->toBe(1);
 });
 
+test('a book can sell print and digital formats from one product', function () {
+    $category = Category::query()->create([
+        'name' => 'Books',
+        'slug' => 'books-formats',
+        'sort' => 1,
+    ]);
+
+    $book = Product::query()->create([
+        'category_id' => $category->id,
+        'type' => ProductType::Physical,
+        'kind' => ProductKind::Book,
+        'name' => 'Dual Format Book',
+        'slug' => 'dual-format-book',
+        'brand' => 'mourymore_store',
+        'description' => 'Print and PDF.',
+        'highlights' => ['Both formats'],
+        'price' => 200,
+        'stock' => 2,
+        'image' => 'images/catalog/fallback.svg',
+    ]);
+
+    $book->bookDetail()->create([
+        'author' => ['en' => 'Author'],
+        'pages' => 100,
+        'offers_print' => true,
+        'offers_digital' => true,
+        'digital_price' => 120,
+        'file_path' => 'books/sample.pdf',
+    ]);
+
+    app(Cart::class)->add($book->id, 1, 'print');
+    app(Cart::class)->add($book->id, 1, 'digital');
+
+    $lines = app(Cart::class)->lines();
+
+    expect($lines)->toHaveCount(2)
+        ->and((float) $lines->sum('line'))->toBe(320.0);
+
+    placeStoreOrder()->assertRedirect();
+
+    $order = Order::query()->first();
+
+    expect($order)->not->toBeNull()
+        ->and($order->items)->toHaveCount(2)
+        ->and($order->items->pluck('product_type')->sort()->values()->all())->toBe(['digital', 'physical'])
+        ->and(StockReservation::query()->where('status', 'held')->sum('qty'))->toBe(1);
+});
+
 test('a course can be bought without touching stock', function () {
     $category = Category::query()->create([
         'name' => 'Courses',
         'slug' => 'courses',
-        'icon' => 'course',
         'sort' => 1,
     ]);
 
@@ -153,18 +198,138 @@ test('a course can be bought without touching stock', function () {
 
     app(Cart::class)->add($course->id);
 
-    Livewire::test(CheckoutPage::class)
-        ->set('name', 'Nour Hassan')
-        ->set('phone', '01012345678')
-        ->set('governorate', 'Cairo')
-        ->set('city', 'Nasr City')
-        ->set('address', '12 Abbas El Akkad')
-        ->set('payment', 'card')
-        ->call('placeOrder')
-        ->assertHasNoErrors();
+    placeStoreOrder()->assertRedirect();
 
     expect($course->fresh()->stock)->toBe(0)
+        ->and(Order::query()->count())->toBe(1)
+        ->and((float) Order::query()->value('shipping'))->toBe(0.0);
+});
+
+test('checkout summary shows no delivery fee for digital-only carts', function () {
+    $category = Category::query()->create([
+        'name' => 'Courses',
+        'slug' => 'courses-summary',
+        'sort' => 1,
+    ]);
+
+    $course = Product::query()->create([
+        'category_id' => $category->id,
+        'type' => ProductType::Digital,
+        'name' => 'Summary Course',
+        'slug' => 'summary-course',
+        'brand' => 'mourymore_store',
+        'description' => 'A course for the summary test.',
+        'highlights' => ['One lesson'],
+        'price' => 200,
+        'stock' => 0,
+        'image' => 'images/catalog/kitchen.jpg',
+    ]);
+
+    app(Cart::class)->add($course->id);
+
+    $this->get(route('checkout'))
+        ->assertOk()
+        ->assertSee(__('store.checkout.free'))
+        ->assertSee(__('store.checkout.digital_note'))
+        ->assertDontSee(__('store.checkout.free_note', [
+            'eta' => 'Same day or next day',
+            'amount' => '1,500.00 EGP',
+        ]));
+});
+
+test('order line totals use locked product prices at checkout time', function () {
+    $product = makeCatalogProduct();
+    app(Cart::class)->add($product->id);
+
+    $product->update(['price' => 1500]);
+
+    placeStoreOrder()->assertRedirect();
+
+    $order = Order::query()->first();
+    $item = $order->items()->first();
+
+    expect((float) $item->price)->toBe(1500.0)
+        ->and((float) $item->line_total)->toBe(1500.0)
+        ->and((float) $order->subtotal)->toBe(1500.0);
+});
+
+test('expired promo codes are rejected at checkout', function () {
+    $product = makeCatalogProduct();
+    app(Cart::class)->add($product->id);
+
+    Offer::query()->create([
+        'code' => 'OLD10',
+        'name' => ['en' => 'Expired'],
+        'type' => 'percent',
+        'value' => 10,
+        'is_active' => true,
+        'starts_at' => now()->subDays(10),
+        'ends_at' => now()->subDay(),
+        'max_uses' => 100,
+        'used_count' => 0,
+        'sort' => 1,
+    ]);
+
+    placeStoreOrder(['promo' => 'OLD10'])->assertRedirect(route('checkout'))->assertSessionHasErrors('promo');
+
+    expect(Order::query()->count())->toBe(0);
+});
+
+test('promo max_uses cannot be exceeded across checkouts', function () {
+    $product = makeCatalogProduct();
+    $product->update(['stock' => 5]);
+
+    Offer::query()->create([
+        'code' => 'FIRST1',
+        'name' => ['en' => 'First only'],
+        'type' => 'percent',
+        'value' => 10,
+        'is_active' => true,
+        'starts_at' => now()->subHour(),
+        'ends_at' => now()->addDay(),
+        'max_uses' => 1,
+        'used_count' => 0,
+        'sort' => 1,
+    ]);
+
+    app(Cart::class)->add($product->id);
+
+    placeStoreOrder(['promo' => 'FIRST1'])->assertRedirect();
+
+    expect(Offer::query()->where('code', 'FIRST1')->value('used_count'))->toBe(1)
         ->and(Order::query()->count())->toBe(1);
+
+    // New shopper attempt: clear checkout resume keys from the previous session.
+    session()->forget(['store.checkout_order_id', 'store.checkout_token']);
+    app(Cart::class)->add($product->id);
+
+    placeStoreOrder([
+        'name' => 'Sara Ali',
+        'phone' => '01098765432',
+        'city' => 'Maadi',
+        'address' => '5 Road 9',
+        'promo' => 'FIRST1',
+    ])->assertRedirect(route('checkout'))->assertSessionHasErrors('promo');
+
+    expect(Offer::query()->where('code', 'FIRST1')->value('used_count'))->toBe(1)
+        ->and(Order::query()->count())->toBe(1);
+});
+
+test('recordUse refuses to pass max_uses under a conditional update', function () {
+    $offer = Offer::query()->create([
+        'code' => 'CAP2',
+        'name' => ['en' => 'Cap'],
+        'type' => 'fixed',
+        'value' => 50,
+        'is_active' => true,
+        'max_uses' => 2,
+        'used_count' => 2,
+        'sort' => 1,
+    ]);
+
+    expect($offer->isUsable(500))->toBeFalse()
+        ->and($offer->recordUse())->toBeFalse()
+        ->and($offer->fresh()->used_count)->toBe(2);
 });
 
 test('paymob holds stock until the payment is marked paid', function () {
@@ -173,15 +338,7 @@ test('paymob holds stock until the payment is marked paid', function () {
 
     app(Cart::class)->add($product->id);
 
-    Livewire::test(CheckoutPage::class)
-        ->set('name', 'Nour Hassan')
-        ->set('phone', '01012345678')
-        ->set('governorate', 'Cairo')
-        ->set('city', 'Nasr City')
-        ->set('address', '12 Abbas El Akkad')
-        ->set('payment', 'card')
-        ->call('placeOrder')
-        ->assertHasNoErrors();
+    placeStoreOrder()->assertRedirect();
 
     expect($product->fresh()->stock)->toBe(1)
         ->and(StockReservation::query()->where('status', 'held')->count())->toBe(1)
@@ -205,7 +362,6 @@ test('a paid digital order grants access', function () {
     $category = Category::query()->create([
         'name' => 'Books',
         'slug' => 'books',
-        'icon' => 'book',
         'sort' => 1,
     ]);
 
@@ -224,15 +380,7 @@ test('a paid digital order grants access', function () {
 
     app(Cart::class)->add($book->id);
 
-    Livewire::test(CheckoutPage::class)
-        ->set('name', 'Nour Hassan')
-        ->set('phone', '01012345678')
-        ->set('governorate', 'Cairo')
-        ->set('city', 'Nasr City')
-        ->set('address', '12 Abbas El Akkad')
-        ->set('payment', 'card')
-        ->call('placeOrder')
-        ->assertHasNoErrors();
+    placeStoreOrder()->assertRedirect();
 
     expect(Entitlement::query()->count())->toBe(0);
 

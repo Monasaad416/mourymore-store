@@ -49,8 +49,16 @@
                 <p class="text-xs font-semibold text-deal">-{{ $product->discountPercent() }}%</p>
             @endif
         </div>
-        <p class="mt-1 text-xs text-nile-800">
-            {{ $product->inStock() ? __('store.card.express') : __('store.card.out') }}
+        <p class="mt-2">
+            @if ($product->inStock())
+                <span class="inline-flex rounded-full bg-stock-soft px-2.5 py-0.5 text-[11px] font-semibold text-stock">
+                    {{ __('store.card.in_stock') }}
+                </span>
+            @else
+                <span class="inline-flex rounded-full bg-deal/10 px-2.5 py-0.5 text-[11px] font-semibold text-deal">
+                    {{ __('store.card.out') }}
+                </span>
+            @endif
         </p>
         <div class="mt-auto pt-3">
             @if ($product->inStock())

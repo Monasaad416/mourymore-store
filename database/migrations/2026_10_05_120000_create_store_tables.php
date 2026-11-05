@@ -49,6 +49,9 @@ return new class extends Migration
             $table->foreignId('product_id')->unique()->constrained()->cascadeOnDelete();
             $table->json('author');
             $table->unsignedInteger('pages')->nullable();
+            $table->boolean('offers_print')->default(true);
+            $table->boolean('offers_digital')->default(false);
+            $table->decimal('digital_price', 10, 2)->nullable();
             $table->string('file_path')->nullable();
             $table->timestamps();
         });

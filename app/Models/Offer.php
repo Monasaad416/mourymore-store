@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Spatie\Translatable\HasTranslations;
 
 /**
@@ -17,8 +17,8 @@ use Spatie\Translatable\HasTranslations;
  * @property float|null $min_subtotal
  * @property int|null $max_uses
  * @property int $used_count
- * @property Carbon|null $starts_at
- * @property Carbon|null $ends_at
+ * @property CarbonInterface|null $starts_at
+ * @property CarbonInterface|null $ends_at
  * @property bool $is_active
  * @property int $sort
  */
@@ -90,11 +90,11 @@ class Offer extends Model
             return false;
         }
 
-        if ($this->starts_at instanceof Carbon && $this->starts_at->isFuture()) {
+        if ($this->starts_at instanceof CarbonInterface && $this->starts_at->isFuture()) {
             return false;
         }
 
-        if ($this->ends_at instanceof Carbon && $this->ends_at->isPast()) {
+        if ($this->ends_at instanceof CarbonInterface && $this->ends_at->isPast()) {
             return false;
         }
 
@@ -122,12 +122,48 @@ class Offer extends Model
         return round(min($amount, $subtotal), 2);
     }
 
-    public function recordUse(): void
+    /**
+     * Atomically consume one use. Safe under concurrency when max_uses is set.
+     * Prefer calling after lockUsableByCode() inside the same DB transaction.
+     */
+    public function recordUse(): bool
     {
-        $this->increment('used_count');
+        if ($this->max_uses === null) {
+            $this->increment('used_count');
+
+            return true;
+        }
+
+        $affected = static::query()
+            ->whereKey($this->id)
+            ->where('used_count', '<', $this->max_uses)
+            ->increment('used_count');
+
+        if ($affected < 1) {
+            return false;
+        }
+
+        $this->used_count = (int) $this->used_count + 1;
+
+        return true;
     }
 
     public static function findUsableByCode(string $code, float $subtotal): ?self
+    {
+        return static::resolveUsableByCode($code, $subtotal, forUpdate: false);
+    }
+
+    /**
+     * Same rules as findUsableByCode, but locks the offer row (FOR UPDATE).
+     * Call only inside an open DB transaction so concurrent checkouts cannot
+     * both pass a max_uses / date check and oversell the last redemption.
+     */
+    public static function lockUsableByCode(string $code, float $subtotal): ?self
+    {
+        return static::resolveUsableByCode($code, $subtotal, forUpdate: true);
+    }
+
+    private static function resolveUsableByCode(string $code, float $subtotal, bool $forUpdate): ?self
     {
         $normalized = strtoupper(trim($code));
 
@@ -135,9 +171,13 @@ class Offer extends Model
             return null;
         }
 
-        $offer = static::query()
-            ->whereRaw('UPPER(code) = ?', [$normalized])
-            ->first();
+        $query = static::query()->whereRaw('UPPER(code) = ?', [$normalized]);
+
+        if ($forUpdate) {
+            $query->lockForUpdate();
+        }
+
+        $offer = $query->first();
 
         if (! $offer instanceof self || ! $offer->isUsable($subtotal)) {
             return null;

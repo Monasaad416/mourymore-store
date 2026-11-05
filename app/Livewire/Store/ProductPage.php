@@ -2,10 +2,13 @@
 
 namespace App\Livewire\Store;
 
+use App\Enums\BookFormat;
+use App\Enums\ProductKind;
 use App\Livewire\Store\Concerns\ManagesBasket;
 use App\Models\Product;
 use App\Services\Cart;
 use App\Services\Wishlist;
+use App\Support\Money;
 use App\Support\Shipping;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
@@ -22,15 +25,36 @@ class ProductPage extends Component
 
     public int $qty = 1;
 
+    public string $format = '';
+
     public function mount(Product $product): void
     {
         $this->product = $product->load(['category', 'bookDetail', 'lessons', 'images']);
+        $defaultFormat = $this->product->defaultBookFormat();
+        $this->format = $defaultFormat instanceof BookFormat
+            ? $defaultFormat->value
+            : ($this->product->kind === ProductKind::Book ? BookFormat::Print->value : '');
         $this->remember();
+    }
+
+    public function updatedFormat(string $value): void
+    {
+        $chosen = BookFormat::tryFrom($value);
+
+        if ($chosen === null || ! $this->product->canPurchaseFormat($chosen, 1)) {
+            $fallback = $this->product->defaultBookFormat();
+            $this->format = $fallback instanceof BookFormat ? $fallback->value : '';
+
+            return;
+        }
+
+        $this->qty = min($this->qty, $this->product->purchaseLimitFor($chosen));
     }
 
     public function increment(): void
     {
-        $this->qty = min($this->product->purchaseLimit(), $this->qty + 1);
+        $limit = $this->product->purchaseLimitFor($this->selectedFormat());
+        $this->qty = min($limit, $this->qty + 1);
     }
 
     public function decrement(): void
@@ -40,20 +64,27 @@ class ProductPage extends Component
 
     public function add(): void
     {
-        $this->addToCart($this->product->id, $this->qty);
+        $format = $this->selectedFormat();
+        $this->addToCart(
+            $this->product->id,
+            $this->qty,
+            $format?->value,
+        );
     }
 
     public function buyNow(): void
     {
-        if (! $this->product->inStock()) {
-            $this->dispatch('toast', message: __('store.product.out_of_stock'));
+        $format = $this->selectedFormat();
+
+        if (! $this->product->canPurchaseFormat($format, $this->qty)) {
+            $this->notifyCustomer(__('store.product.out_of_stock'));
 
             return;
         }
 
-        app(Cart::class)->add($this->product->id, $this->qty);
+        app(Cart::class)->add($this->product->id, $this->qty, $format?->value);
         $this->dispatch('basket-updated');
-        $this->redirect(route('checkout'), navigate: true);
+        $this->redirect(route('checkout'));
     }
 
     public function save(): void
@@ -77,6 +108,11 @@ class ProductPage extends Component
             ->take(4)
             ->get();
 
+        $format = $this->selectedFormat();
+        $unitPrice = $this->product->priceForFormat($format);
+        $canBuy = $this->product->canPurchaseFormat($format, max(1, $this->qty));
+        $needsShipping = $format !== BookFormat::Digital && $this->product->tracksStock();
+
         $name = $this->product->displayName();
         $description = Str::limit(
             strip_tags($this->product->displayDescription()),
@@ -87,9 +123,15 @@ class ProductPage extends Component
             'related' => $related,
             'wished' => app(Wishlist::class)->contains($this->product->id),
             'wishedIds' => app(Wishlist::class)->ids(),
-            'quote' => Shipping::quote($governorate, (float) $this->product->price),
+            'quote' => Shipping::quote($governorate, $unitPrice),
             'governorate' => $governorate,
             'reviews' => $this->reviews(),
+            'formats' => $this->product->availableBookFormats(),
+            'selectedFormat' => $format,
+            'unitPrice' => $unitPrice,
+            'formattedUnitPrice' => Money::format($unitPrice),
+            'canBuy' => $canBuy,
+            'needsShipping' => $needsShipping,
         ])
             ->title(__('store.product.title', ['name' => $name]))
             ->layoutData([
@@ -98,6 +140,15 @@ class ProductPage extends Component
                 'ogType' => 'product',
                 'ogImage' => $this->product->imageUrl(),
             ]);
+    }
+
+    private function selectedFormat(): ?BookFormat
+    {
+        if ($this->product->kind !== ProductKind::Book) {
+            return null;
+        }
+
+        return BookFormat::tryFrom($this->format) ?? $this->product->defaultBookFormat();
     }
 
     /**
@@ -119,10 +170,10 @@ class ProductPage extends Component
             }
 
             $rows[] = [
-                'name' => is_string($review['name'] ?? null) ? $review['name'] : '',
-                'city' => is_string($review['city'] ?? null) ? $review['city'] : '',
-                'stars' => (int) ($review['stars'] ?? 0),
-                'text' => is_string($review['text'] ?? null) ? $review['text'] : '',
+                'name' => (string) ($review['name'] ?? ''),
+                'city' => (string) ($review['city'] ?? ''),
+                'stars' => (int) ($review['stars'] ?? 5),
+                'text' => (string) ($review['text'] ?? ''),
             ];
         }
 
@@ -131,9 +182,9 @@ class ProductPage extends Component
 
     private function remember(): void
     {
-        $raw = session('store.recent', []);
-        $ids = is_array($raw) ? array_map(intval(...), $raw) : [];
-        $ids = array_values(array_unique(array_merge([$this->product->id], $ids)));
-        session(['store.recent' => array_slice($ids, 0, 8)]);
+        $ids = session('store.recent', []);
+        $ids = is_array($ids) ? $ids : [];
+        $ids = array_values(array_unique(array_merge([$this->product->id], array_map('intval', $ids))));
+        session(['store.recent' => array_slice($ids, 0, 12)]);
     }
 }

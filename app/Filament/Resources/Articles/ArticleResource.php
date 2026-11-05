@@ -25,6 +25,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class ArticleResource extends Resource
@@ -147,6 +148,10 @@ class ArticleResource extends Resource
                     ->label(__('filament/resources.articles.fields.published_at'))
                     ->dateTime()
                     ->sortable(),
+            ])
+            ->filters([
+                TernaryFilter::make('is_published')
+                    ->label(__('filament/resources.articles.fields.is_published')),
             ])
             ->recordActions([
                 ViewAction::make(),

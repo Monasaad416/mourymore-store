@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Store;
 
+use App\Enums\BookFormat;
 use App\Livewire\Store\Concerns\ManagesBasket;
 use App\Services\Cart;
 use App\Support\Shipping;
@@ -15,23 +16,23 @@ class CartPage extends Component
 {
     use ManagesBasket;
 
-    public function setQty(int $productId, int $qty): void
+    public function setQty(int $productId, int $qty, string $format = 'default'): void
     {
-        app(Cart::class)->set($productId, $qty);
+        app(Cart::class)->set($productId, $qty, $format === 'default' ? null : $format);
         $this->dispatch('basket-updated');
     }
 
-    public function remove(int $productId): void
+    public function remove(int $productId, string $format = 'default'): void
     {
-        app(Cart::class)->remove($productId);
+        app(Cart::class)->remove($productId, $format);
         $this->dispatch('basket-updated');
-        $this->dispatch('toast', message: __('store.cart.removed'));
+        $this->notifyCustomer(__('store.cart.removed'));
     }
 
-    public function saveForLater(int $productId): void
+    public function saveForLater(int $productId, string $format = 'default'): void
     {
         $this->toggleWishlist($productId);
-        app(Cart::class)->remove($productId);
+        app(Cart::class)->remove($productId, $format);
         $this->dispatch('basket-updated');
     }
 
@@ -55,7 +56,10 @@ class CartPage extends Component
             'quote' => Shipping::quote($governorate, $subtotal),
             'governorate' => $governorate,
             'count' => $cart->count(),
-            'ships' => $lines->contains(fn (array $line): bool => $line['product']->tracksStock()),
+            'ships' => $lines->contains(function (array $line): bool {
+                return ($line['format'] ?? null) !== BookFormat::Digital
+                    && $line['product']->tracksStock();
+            }),
         ])->title(__('store.cart.meta_title'));
     }
 }

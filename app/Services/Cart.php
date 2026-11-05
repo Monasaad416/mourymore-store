@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\BookFormat;
+use App\Enums\ProductKind;
 use App\Models\Cart as CartModel;
 use App\Models\Product;
 use App\Models\User;
@@ -35,54 +37,79 @@ class Cart
         $items = [];
 
         foreach ($cart->items()->get(['product_id', 'qty']) as $item) {
-            $items[$item->product_id] = max(1, $item->qty);
+            $items[$item->product_id] = ($items[$item->product_id] ?? 0) + max(1, $item->qty);
         }
 
         return $items;
     }
 
-    public function add(int $productId, int $qty = 1): void
+    public function add(int $productId, int $qty = 1, ?string $format = null): void
     {
-        $product = Product::query()->find($productId);
+        $product = Product::query()->with('bookDetail')->find($productId);
 
-        if (! $product instanceof Product || ! $product->inStock()) {
+        if (! $product instanceof Product) {
+            return;
+        }
+
+        $formatKey = $this->resolveFormatKey($product, $format);
+        $bookFormat = BookFormat::tryFrom($formatKey);
+
+        if (! $product->canPurchaseFormat($bookFormat, max(1, $qty))) {
             return;
         }
 
         $cart = $this->ensure();
-        $current = (int) $cart->items()->where('product_id', $productId)->value('qty');
-        $next = min($product->purchaseLimit(), $current + max(1, $qty));
+        $current = (int) $cart->items()
+            ->where('product_id', $productId)
+            ->where('format', $formatKey)
+            ->value('qty');
+        $limit = $product->purchaseLimitFor($bookFormat);
+        $next = min($limit, $current + max(1, $qty));
+
+        if ($next < 1) {
+            return;
+        }
 
         $cart->items()->updateOrCreate(
-            ['product_id' => $productId],
-            ['qty' => max(1, $next)],
+            ['product_id' => $productId, 'format' => $formatKey],
+            ['qty' => $next],
         );
         $this->extend($cart);
     }
 
-    public function set(int $productId, int $qty): void
+    public function set(int $productId, int $qty, ?string $format = null): void
     {
+        $product = Product::query()->with('bookDetail')->find($productId);
+        $formatKey = $product instanceof Product
+            ? $this->resolveFormatKey($product, $format)
+            : ($format ?: 'default');
+
         if ($qty < 1) {
-            $this->remove($productId);
+            $this->remove($productId, $formatKey);
 
             return;
         }
 
-        $product = Product::query()->find($productId);
+        if (! $product instanceof Product) {
+            return;
+        }
 
-        if (! $product instanceof Product || ! $product->inStock()) {
+        $bookFormat = BookFormat::tryFrom($formatKey);
+
+        if (! $product->canPurchaseFormat($bookFormat, $qty)) {
             return;
         }
 
         $cart = $this->ensure();
+        $limit = $product->purchaseLimitFor($bookFormat);
         $cart->items()->updateOrCreate(
-            ['product_id' => $productId],
-            ['qty' => min($product->purchaseLimit(), max(1, $qty))],
+            ['product_id' => $productId, 'format' => $formatKey],
+            ['qty' => min($limit, max(1, $qty))],
         );
         $this->extend($cart);
     }
 
-    public function remove(int $productId): void
+    public function remove(int $productId, ?string $format = null): void
     {
         $cart = $this->current();
 
@@ -90,7 +117,13 @@ class Cart
             return;
         }
 
-        $cart->items()->where('product_id', $productId)->delete();
+        $query = $cart->items()->where('product_id', $productId);
+
+        if ($format !== null && $format !== '') {
+            $query->where('format', $format);
+        }
+
+        $query->delete();
         $this->extend($cart);
     }
 
@@ -107,9 +140,55 @@ class Cart
         $this->forgetCookie();
     }
 
+    public function id(): ?int
+    {
+        return $this->current()?->id;
+    }
+
+    public function token(): ?string
+    {
+        return $this->current()?->token;
+    }
+
+    /**
+     * Bind the cart the shopper just saw when the store_cart cookie is absent.
+     *
+     * Checkout is a full-page POST. The cart page is Livewire, which can show
+     * lines from the logged-in cart while the next document POST has no cookie.
+     * The session pin and the hidden cart_token are set on the page that
+     * rendered those lines, so place-order does not bounce back to /cart.
+     */
+    public function resumePinned(?string $postedToken = null): void
+    {
+        if ($this->count() > 0) {
+            return;
+        }
+
+        foreach ([$this->sessionCartToken(), $postedToken] as $token) {
+            if ($this->adoptToken($token)) {
+                return;
+            }
+        }
+    }
+
+    public static function deleteById(?int $cartId): void
+    {
+        if ($cartId === null || $cartId < 1) {
+            return;
+        }
+
+        CartModel::query()->whereKey($cartId)->delete();
+    }
+
     public function count(): int
     {
-        return (int) array_sum($this->items());
+        $cart = $this->current();
+
+        if (! $cart instanceof CartModel) {
+            return 0;
+        }
+
+        return (int) $cart->items()->sum('qty');
     }
 
     public function subtotal(): float
@@ -118,30 +197,48 @@ class Cart
     }
 
     /**
-     * @return Collection<int, array{product: Product, qty: int, line: float}>
+     * @return Collection<int, array{product: Product, qty: int, line: float, unit: float, format: BookFormat|null, format_key: string}>
      */
     public function lines(): Collection
     {
-        $items = $this->items();
+        $cart = $this->current();
         $lines = collect();
 
-        if ($items === []) {
+        if (! $cart instanceof CartModel) {
             return $lines;
         }
 
-        $products = Product::query()->whereIn('id', array_keys($items))->get()->keyBy('id');
+        $items = $cart->items()->get(['product_id', 'format', 'qty']);
 
-        foreach ($items as $id => $qty) {
-            $product = $products->get($id);
+        if ($items->isEmpty()) {
+            return $lines;
+        }
+
+        $products = Product::query()
+            ->with('bookDetail')
+            ->whereIn('id', $items->pluck('product_id')->all())
+            ->get()
+            ->keyBy('id');
+
+        foreach ($items as $item) {
+            $product = $products->get($item->product_id);
 
             if (! $product instanceof Product) {
                 continue;
             }
 
+            $formatKey = (string) ($item->format ?: 'default');
+            $bookFormat = BookFormat::tryFrom($formatKey);
+            $unit = $product->priceForFormat($bookFormat);
+            $qty = max(1, (int) $item->qty);
+
             $lines->push([
                 'product' => $product,
                 'qty' => $qty,
-                'line' => round((float) $product->price * $qty, 2),
+                'unit' => $unit,
+                'line' => round($unit * $qty, 2),
+                'format' => $bookFormat,
+                'format_key' => $formatKey,
             ]);
         }
 
@@ -191,6 +288,25 @@ class Cart
         $this->forgetCookie();
     }
 
+    private function resolveFormatKey(Product $product, ?string $format): string
+    {
+        if ($product->kind !== ProductKind::Book) {
+            return 'default';
+        }
+
+        if (is_string($format) && $format !== '' && $format !== 'default') {
+            $chosen = BookFormat::tryFrom($format);
+
+            if ($chosen instanceof BookFormat && $product->canPurchaseFormat($chosen, 1)) {
+                return $chosen->value;
+            }
+        }
+
+        $default = $product->defaultBookFormat();
+
+        return $default instanceof BookFormat ? $default->value : 'default';
+    }
+
     private function guestCart(): ?CartModel
     {
         if ($this->resolved && $this->cart instanceof CartModel && $this->cart->user_id === null) {
@@ -216,6 +332,10 @@ class Cart
             if ($cart instanceof CartModel) {
                 $this->rememberCookie($cart);
             }
+        }
+
+        if ($cart instanceof CartModel) {
+            $this->rememberInSession($cart);
         }
 
         return $this->cart = $cart;
@@ -269,21 +389,27 @@ class Cart
     private function merge(CartModel $guest, CartModel $account): void
     {
         foreach ($guest->items()->get() as $item) {
-            $product = Product::query()->find($item->product_id);
+            $product = Product::query()->with('bookDetail')->find($item->product_id);
 
             if (! $product instanceof Product) {
                 continue;
             }
 
-            $limit = $product->purchaseLimit();
+            $formatKey = (string) ($item->format ?: 'default');
+            $bookFormat = BookFormat::tryFrom($formatKey);
+            $limit = $product->purchaseLimitFor($bookFormat);
 
             if ($limit < 1) {
                 continue;
             }
 
-            $existing = (int) $account->items()->where('product_id', $item->product_id)->value('qty');
+            $existing = (int) $account->items()
+                ->where('product_id', $item->product_id)
+                ->where('format', $formatKey)
+                ->value('qty');
+
             $account->items()->updateOrCreate(
-                ['product_id' => $item->product_id],
+                ['product_id' => $item->product_id, 'format' => $formatKey],
                 ['qty' => min($limit, $existing + $item->qty)],
             );
         }
@@ -309,6 +435,59 @@ class Cart
         $this->cart = $cart;
         $this->resolved = true;
         $this->rememberCookie($cart);
+        $this->rememberInSession($cart);
+    }
+
+    private function sessionCartToken(): ?string
+    {
+        $token = session('store.checkout_cart_token');
+
+        return is_string($token) && $token !== '' ? $token : null;
+    }
+
+    private function adoptToken(?string $token): bool
+    {
+        if (! is_string($token) || preg_match('/^[A-Za-z0-9]{20,80}$/', $token) !== 1) {
+            return false;
+        }
+
+        $cart = CartModel::query()->where('token', $token)->first();
+
+        if (! $cart instanceof CartModel) {
+            return false;
+        }
+
+        $cart = $this->dropIfExpired($cart);
+
+        if (! $cart instanceof CartModel || ! $this->belongsToViewer($cart)) {
+            return false;
+        }
+
+        if (! $cart->items()->exists()) {
+            return false;
+        }
+
+        $this->keep($cart);
+
+        return true;
+    }
+
+    private function belongsToViewer(CartModel $cart): bool
+    {
+        if ($cart->user_id === null) {
+            return true;
+        }
+
+        return auth()->check() && (int) $cart->user_id === (int) auth()->id();
+    }
+
+    private function rememberInSession(CartModel $cart): void
+    {
+        if (session('store.checkout_cart_token') === $cart->token) {
+            return;
+        }
+
+        session(['store.checkout_cart_token' => $cart->token]);
     }
 
     private function extend(CartModel $cart): void

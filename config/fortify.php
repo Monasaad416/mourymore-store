@@ -73,7 +73,7 @@ return [
     |
     */
 
-    'home' => '/dashboard',
+    'home' => '/',
 
     /*
     |--------------------------------------------------------------------------
@@ -163,7 +163,7 @@ return [
     'features' => [
         Features::registration(),
         Features::resetPasswords(),
-        Features::emailVerification(),
+        // Email verification needs a working mail provider; keep accounts usable without it.
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,
